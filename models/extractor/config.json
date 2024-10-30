@@ -1,0 +1,13 @@
+{
+    "num_classes": 100,
+    "batch_size": 4,
+    "lr": 0.001,
+    "epochs": 25,
+    "patience": 10,
+    "num_workers": 4,
+    "enable_earlystop": false,
+    "train_data": "data/processed/extractor/train_100.json",
+    "val_data": "data/processed/extractor/test_100.json",
+    "video_root": "data/processed/extractor/videos",
+    "output_path": "models/extractor/checkpoints"
+}

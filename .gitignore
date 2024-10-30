@@ -1,0 +1,5 @@
+data/processed/extractor/
+data/processed/transformer/
+data/raw/
+checkpoints
+experiments

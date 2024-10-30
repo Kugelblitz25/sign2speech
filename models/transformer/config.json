@@ -1,0 +1,12 @@
+{
+    "batch_size": 32,
+    "lr": 0.01,
+    "epochs": 100,
+    "patience": 10,
+    "num_workers": 4,
+    "enable_earlystop": false,
+    "features_csv_train": "data/processed/transformer/features_train.csv",
+    "features_csv_val": "data/processed/transformer/features_val.csv",
+    "specs_csv": "data/processed/generator/specs.csv",
+    "output_path": "models/transformer/checkpoints"
+}
