@@ -1,12 +1,9 @@
-from models.extractor import FeatureExtractor
-from models.transformer import FeatureTransformer
-from models.generator import AudioGenerator
+from models import Sign2Speech
 
+import soundfile as sf
 import cv2
 
-model1 = FeatureExtractor('models/extractor/checkpoints/checkpoint_final.pt')
-model2 = FeatureTransformer('models/transformer/checkpoints/checkpoint_final.pt')
-model3 = AudioGenerator()
+model = Sign2Speech()
 
 frames = []
 cap = cv2.VideoCapture('data/raw/videos/69241.mp4')
@@ -18,10 +15,6 @@ while cap.isOpened():
 
 cap.release()
 
-ft, conf = model1(frames)
-spec = model2(ft)
-audio = model3(spec)
+audio, sr = model(frames)
 
-import soundfile as sf
-sf.write('output_audio.wav', audio, model3.sr)
-print(spec.shape)
+sf.write('output_audio.wav', audio, sr)

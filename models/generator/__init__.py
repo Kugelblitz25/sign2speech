@@ -6,11 +6,10 @@ class AudioGenerator:
         self.sr = 24000
         self.n_fft = 2048
         self.hop_length = 512
-        self.n_iter =100
+        self.n_iter = 100
 
     def denormalize(self, spectrogram):
         spectrogram = spectrogram.cpu().numpy()[0][0]
-        spectrogram = (spectrogram - 1) * 80.0
         spectrogram = librosa.db_to_power(spectrogram)
         return spectrogram
     

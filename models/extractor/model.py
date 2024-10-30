@@ -1,6 +1,7 @@
 import torch.nn as nn
 from pytorchvideo.models.hub import i3d_r50
 
+
 class ModifiedI3D(nn.Module):
     def __init__(self, num_classes: int = 2000):
         super(ModifiedI3D, self).__init__()

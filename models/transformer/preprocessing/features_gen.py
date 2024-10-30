@@ -1,13 +1,15 @@
 import json
+from pathlib import Path
+
+import pandas as pd
+import torch
+from sklearn.model_selection import train_test_split
+from torch.utils.data import DataLoader
 from tqdm import tqdm
+
 from models.extractor.dataset import WLASLDataset, video_transform
 from models.extractor.model import ModifiedI3D
 from utils import load_model_weights
-import torch
-from pathlib import Path
-from torch.utils.data import DataLoader
-import pandas as pd
-from sklearn.model_selection import train_test_split
 
 
 def extract_features(model, test_loader, save_path):

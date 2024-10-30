@@ -1,14 +1,14 @@
-import os
-import torch
-import random
-import torchvision.transforms.functional as TF
-from torchvision import transforms
-from pytorchvideo.data.encoded_video import EncodedVideo
-import logging
-from tqdm import tqdm
-import cv2
 import json
+import logging
+import random
 from pathlib import Path
+
+import cv2
+import torch
+import torchvision.transforms.functional as TF
+from pytorchvideo.data.encoded_video import EncodedVideo
+from torchvision import transforms
+from tqdm import tqdm
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

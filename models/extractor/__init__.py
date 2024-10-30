@@ -1,8 +1,10 @@
-from models.extractor.model import ModifiedI3D
-from models.extractor.dataset import preprocess_video
-from utils import load_model_weights
 import numpy as np
 import torch
+import torch.nn.functional as F
+
+from models.extractor.dataset import preprocess_video
+from models.extractor.model import ModifiedI3D
+from utils import load_model_weights
 
 
 class FeatureExtractor:
@@ -19,9 +21,8 @@ class FeatureExtractor:
     def __call__(self, frames: list[np.ndarray]):
         frames = self.stack_frames(frames)
         frames = preprocess_video(frames).to(self.device).unsqueeze(0)
-        print(frames.shape)
         self.model.eval()
         with torch.no_grad():
             features, confs = self.model(frames)
-            max_conf, _ = torch.max(confs, 1)
-        return features, max_conf
+            max_conf, idx = torch.max(F.softmax(confs, dim=1), 1)
+        return features, max_conf, idx

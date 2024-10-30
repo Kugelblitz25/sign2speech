@@ -1,13 +1,15 @@
-from torch.utils.data import DataLoader
 import json
+from pathlib import Path
+
 import torch
-from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
-from pathlib import Path
-from models.transformer.model import SpectrogramGenerator
-from models.transformer.dataset import SpectrogramDataset
+from torch.utils.data import DataLoader
+from tqdm import tqdm
 from utils import EarlyStopping, save_model
+
+from models.transformer.dataset import SpectrogramDataset
+from models.transformer.model import SpectrogramGenerator
 
 
 class Trainer:
@@ -54,7 +56,7 @@ class Trainer:
         total_loss = 0
   
         with torch.no_grad():
-            for features, spectrograms in tqdm(self.val_loader, f'Validation'):
+            for features, spectrograms in tqdm(self.val_loader, 'Validation'):
                 features = features.to(self.device)
                 spectrograms = spectrograms.to(self.device)
                 

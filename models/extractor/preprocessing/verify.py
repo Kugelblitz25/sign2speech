@@ -1,11 +1,13 @@
-import os
-import json
 import argparse
+import json
+import logging
+import os
+
 import torch
 from torch.utils.data import DataLoader
-from models.extractor.dataset import video_transform, WLASLDataset
 from tqdm import tqdm
-import logging 
+
+from models.extractor.dataset import WLASLDataset, video_transform
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 video_data = list[dict[str, str]]

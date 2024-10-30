@@ -1,9 +1,10 @@
-from pathlib import Path
-import torch
-from torch.utils.data import Dataset
-from pytorchvideo.data.encoded_video import EncodedVideo
-import torchvision.transforms as transforms
 import logging
+from pathlib import Path
+
+import torch
+import torchvision.transforms as transforms
+from pytorchvideo.data.encoded_video import EncodedVideo
+from torch.utils.data import Dataset
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

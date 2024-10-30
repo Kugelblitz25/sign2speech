@@ -1,13 +1,15 @@
 import json
-from tqdm import tqdm
 from pathlib import Path
-from models.extractor.dataset import WLASLDataset, video_transform
-from models.extractor.model import ModifiedI3D
-from utils import EarlyStopping, save_model
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from tqdm import tqdm
+
+from models.extractor.dataset import WLASLDataset, video_transform
+from models.extractor.model import ModifiedI3D
+from utils import EarlyStopping, save_model
 
 
 class Trainer:

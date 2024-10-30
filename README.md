@@ -36,7 +36,7 @@ python3 models/extractor/train.py
 
 Adjust the train parameters in `models/extractor/config.json`
 
-> **Note**: If you get `ModuleNotFoundErrorModuleNotFoundError: No module named 'models'`, run
+> **Note**: If you get `ModuleNotFoundError: No module named 'models'`, run
 >
 > ```shell
 > export PYTHONPATH=$(pwd)
