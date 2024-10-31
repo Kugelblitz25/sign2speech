@@ -1,7 +1,7 @@
 import argparse
 import json
 import logging
-import os
+from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader
@@ -21,7 +21,7 @@ def process_json(json_path: str, video_root: str, classlist_path: str) -> tuple[
 
     data = [item for item in data if item['gloss'] in classlist]
 
-    videos = os.listdir(video_root)
+    videos = Path(video_root).iterdir()
     train_data = []
     test_data = []
     miss_count = 0
@@ -70,17 +70,17 @@ def verify_videos(data: video_data, video_root: str):
     return good_videos
 
 def main(json_path: str, classlist_path: str, video_root: str, output_folder: str):
+    output_folder = Path(output_folder)
+    output_folder.mkdir(exist_ok=True, parents=True)
+
     train_data, test_data, n_classes = process_json(json_path, video_root, classlist_path)
     train_data = verify_videos(train_data, video_root)
     test_data = verify_videos(test_data, video_root)
 
-    train_data_path = os.path.join(output_folder, f"train_{n_classes}.json")
-    test_data_path = os.path.join(output_folder, f"test_{n_classes}.json")
-
-    with open(train_data_path, 'w') as f:
+    with open(output_folder / f"train_{n_classes}.json", 'w') as f:
         json.dump(train_data, f, indent=4)
     
-    with open(test_data_path, 'w') as f:
+    with open(output_folder / f"test_{n_classes}.json", 'w') as f:
         json.dump(test_data, f, indent=4)
 
 
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     parser.add_argument('--json_path', type=str, default='data/raw/WLASL_v0.3.json', help='Path to the input JSON file')
     parser.add_argument('--classlist_path', type=str, default='data/processed/generator/classes.txt', help='Path to the classlist file')
     parser.add_argument('--video_root', type=str, default='data/raw/videos', help='Directory containing videos')
-    parser.add_argument('--output_folder', type=str, default='data/raw', help='Directory to save outputs')
+    parser.add_argument('--output_folder', type=str, default='data/processed/extractor', help='Directory to save outputs')
     args = parser.parse_args()
 
     main(args.json_path, args.classlist_path, args.video_root, args.output_folder, args.n_classes)

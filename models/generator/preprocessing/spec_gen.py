@@ -49,7 +49,7 @@ def process_words(n_words, json_data):
 
 def main(json_file: str, output_path: str, n_words: int):
     output_path = Path(output_path)
-    output_path.mkdir(exist_ok=True)
+    output_path.mkdir(exist_ok=True, parents=True)
 
     with open(json_file, 'r') as f:
         json_data = json.load(f)

@@ -59,18 +59,6 @@ class VideoAugmenter:
 
 
 def augment_dataset(data: list[dict], video_root: str, output_dir: str, num_augmentations: int = 3):
-    """
-    Augment the entire dataset and save augmented videos
-    
-    Args:
-        data: List of dictionaries containing video information
-        video_root: Directory containing original videos
-        num_augmentations: Number of augmented versions to create per video
-    """
-    output_dir = Path(output_dir)
-    output_dir.mkdir(exist_ok=True)
-    video_root = Path(video_root)
-    
     # Create augmenter
     augmenter = VideoAugmenter()
     
@@ -134,7 +122,11 @@ if __name__ == "__main__":
         data = json.load(f)
 
     output_dir = Path(args.output_dir)
-    augmented_data = augment_dataset(data, args.video_root, output_dir/'videos', args.num_augmentations)
+    output_dir.mkdir(exist_ok=True, parents=True)
+    output_video_dir = output_dir / 'videos'
+    output_video_dir.mkdir(exist_ok=True)
+
+    augmented_data = augment_dataset(data, Path(args.video_root), output_video_dir, args.num_augmentations)
     new_datafile = output_dir / Path(args.datafile).name
     with open(new_datafile, 'w') as f:
         json.dump(augmented_data, f, indent=4)
