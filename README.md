@@ -41,7 +41,6 @@ python3 models/extractor/preprocessing/verify.py
 - Augment the videos to generate more data
 
 ```shell
-mkdir -p data/processed/extractor
 python3 models/extractor/preprocessing/augmentation.py --datafile data/raw/train_100.json
 python3 models/extractor/preprocessing/augmentation.py --datafile data/raw/test_100.json
 ```
@@ -68,7 +67,6 @@ Adjust the train parameters in `models/extractor/config.json`
 - Save the features from the WLASL dataset using the above trained model.
 
 ```shell
-mkdir -p data/processed/transformer
 python3 models/transformer/preprocessing/features_gen.py
 ```
 
