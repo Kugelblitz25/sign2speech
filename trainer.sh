@@ -1,7 +1,10 @@
 #!/bin/bash
 
-source ../.venv/bin/activate
+source .venv/bin/activate
 export PYTHONPATH=$(pwd)
+
+echo "Generate spectrograms for Top 100 words"
+python3 models/generator/preprocessing/spec_gen.py
 
 echo "Loading and Verifying videos for 100 signs"
 python3 models/extractor/preprocessing/verify.py
@@ -20,6 +23,3 @@ python3 models/transformer/preprocessing/features_gen.py
 
 echo "Training Feature Transformer"
 python3 models/transformer/train.py
-
-echo "Testing"
-python3 test.py

@@ -2,6 +2,18 @@
 
 ## Training
 
+### Install dependancies
+
+---
+
+- Create a virtual environment and install the project dependancies
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
 ### Feature Extractor (Modified I3D)
 
 ---
@@ -9,12 +21,18 @@
 - Download the raw WLASL-2000 Dataset from kaggle
 
 ```shell
-curl -L -o archive.zip https://www.kaggle.com/api/v1/datasets/download/risangbaskoro/wlasl-processed`
+curl -L -o archive.zip 'https://www.kaggle.com/api/v1/datasets/download/risangbaskoro/wlasl-processed'
 ```
 
 - Unzip the `archive.zip` into `data/raw` folder.
 
-- Verify the videos and split into train and validation sets with 100 classes
+- Generate the spectrograms and select Top 100 classes with highest number of instances in the dataset
+
+```shell
+python3 models/generator/preprocessing/spec_gen.py
+```
+
+- Verify the videos and split into train and validation sets
 
 ```shell
 python3 models/extractor/preprocessing/verify.py
@@ -61,6 +79,17 @@ python3 models/transformer/train.py
 ```
 
 Adjust the train parameters in `models/transformer/config.json`
+
+### Training Script
+
+---
+
+Alternatively, after installing the dependacies and downloading the dataset into `data/raw` folder you can run `trainer.sh` to doc the complete training.
+
+```bash
+chmod +x trainer.sh
+./trainer.sh
+```
 
 ## Testing
 

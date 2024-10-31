@@ -3,3 +3,4 @@ data/processed/transformer/
 data/raw/
 checkpoints
 experiments
+.venv
