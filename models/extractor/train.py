@@ -84,7 +84,7 @@ class Trainer:
 
     def train(self):
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.config['lr'])
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.config['lr'], weight_decay=self.config['weight_decay'])
         early_stopping = EarlyStopping(patience=self.config['patience'], verbose=True)
 
         # Training
@@ -103,6 +103,8 @@ class Trainer:
                 print("Early stopping triggered. Stopping training.")
                 save_model(self.model, self.optimizer, self.config, val_loss, self.output_path/'checkpoint_final.pt')
                 break
+            
+        save_model(self.model, self.optimizer, self.config, val_loss, self.output_path/'checkpoint_final.pt')
 
 if __name__ == "__main__":
     import argparse

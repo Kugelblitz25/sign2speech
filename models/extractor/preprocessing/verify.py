@@ -17,11 +17,11 @@ def process_json(json_path: str, video_root: str, classlist_path: str) -> tuple[
         data = json.load(f)
 
     with open(classlist_path, 'r') as f:
-        classlist = f.readlines()
+        classlist = [word.strip() for word in f.readlines()]
 
     data = [item for item in data if item['gloss'] in classlist]
 
-    videos = Path(video_root).iterdir()
+    video_root = Path(video_root)
     train_data = []
     test_data = []
     miss_count = 0
@@ -30,7 +30,7 @@ def process_json(json_path: str, video_root: str, classlist_path: str) -> tuple[
         gloss = item['gloss']
         for instance in item['instances']:
             tot_count += 1
-            if f'{instance["video_id"]}.mp4' not in videos:
+            if not (video_root/f'{instance["video_id"]}.mp4').exists():
                 miss_count += 1
                 continue
             

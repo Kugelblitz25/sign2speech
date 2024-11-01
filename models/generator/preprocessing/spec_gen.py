@@ -26,8 +26,9 @@ def process_words(n_words, json_data):
         if spectrogram.shape[2] > 88:
             i+=1
             continue
-        spectrograms[words] = spectrogram
+        spectrograms[words[i]] = spectrogram
         count += 1
+        i += 1
 
 
     for word, spectrogram in spectrograms.items():
