@@ -12,7 +12,7 @@ class SpectrogramDataset(Dataset):
         
         self.specs_df = pd.read_csv(spectrograms_csv)
         specs = self.specs_df.drop('word', axis=1).values
-        self.spectrograms = {word: spec.reshape(-1, 128, 88) for word, spec in zip(self.specs_df['word'], specs)}
+        self.spectrograms = {word: spec.reshape(-1, 80, 88) for word, spec in zip(self.specs_df['word'], specs)}
         
     def __len__(self):
         return len(self.features)

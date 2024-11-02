@@ -69,8 +69,8 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description='Feature Generation for Spectrogram Generation')
     
-    parser.add_argument('--datafile', type=str, default='data/raw/train_100.json', help='Path to the testing data JSON file')
-    parser.add_argument('--video_root', type=str, default='data/raw/videos', help='Directory containing videos')
+    parser.add_argument('--datafile', type=str, default='data/processed/extractor/train_100.json', help='Path to the testing data JSON file')
+    parser.add_argument('--video_root', type=str, default='data/processed/extractor/videos', help='Directory containing videos')
     parser.add_argument('--weights_path', type=str, default='models/extractor/checkpoints/checkpoint_final.pt', help='Path to load the model weights')
     parser.add_argument('--save_path', type=str, default='data/processed/transformer', help='Path to save the extracted features CSV file')
     

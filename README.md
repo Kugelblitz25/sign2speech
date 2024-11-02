@@ -41,8 +41,8 @@ python3 models/extractor/preprocessing/verify.py
 - Augment the videos to generate more data
 
 ```shell
-python3 models/extractor/preprocessing/augmentation.py --datafile data/raw/train_100.json
-python3 models/extractor/preprocessing/augmentation.py --datafile data/raw/test_100.json
+python3 models/extractor/preprocessing/augmentation.py --datafile data/processed/extractor/train_100.json
+python3 models/extractor/preprocessing/augmentation.py --datafile data/processed/extractor/test_100.json
 ```
 
 - Train the model
