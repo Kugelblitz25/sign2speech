@@ -21,3 +21,6 @@ python3 models/transformer/preprocessing/features_gen.py
 
 echo "Training Feature Transformer"
 python3 models/transformer/train.py
+
+echo "Testing the model"
+python3 test.py

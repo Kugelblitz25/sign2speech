@@ -30,7 +30,6 @@ def process_words(n_words, json_data):
         count += 1
         i += 1
 
-
     for word, spectrogram in spectrograms.items():
         padded_spectrogram = torch.nn.functional.pad(
             spectrogram,

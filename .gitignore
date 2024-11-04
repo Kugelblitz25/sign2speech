@@ -2,3 +2,4 @@ data/
 checkpoints
 experiments
 .venv
+__pycache__

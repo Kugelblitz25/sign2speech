@@ -1,17 +1,16 @@
-import librosa
+from nemo.collections.tts.models import HifiGanModel
+import soundfile as sf
 
 
 class AudioGenerator:
     def __init__(self):
         self.sr = 22050
+        self.model = HifiGanModel.from_pretrained("nvidia/tts_hifigan")
 
-    def denormalize(self, spectrogram):
-        spectrogram = spectrogram.cpu().numpy()[0][0]
-        spectrogram = librosa.db_to_power(spectrogram)
-        return spectrogram
+    def save_audio(self, audio_signal, output_path):
+        sf.write(output_path, audio_signal, self.sr)
     
     def __call__(self, spec):
-        power_spec = self.denormalize(spec)
-        linear_spectrogram = librosa.feature.inverse.mel_to_stft(power_spec, sr=self.sr, n_fft=self.n_fft)
-        audio_signal = 2 * librosa.griffinlim(linear_spectrogram, hop_length=self.hop_length, n_iter=self.n_iter)
+        audio_signal = self.model.convert_spectrogram_to_audio(spec=spec.squeeze(1))
+        audio_signal = audio_signal.to('cpu').detach().squeeze().numpy()
         return audio_signal, self.sr

@@ -112,10 +112,10 @@ def augment_dataset(data: list[dict], video_root: str, output_dir: str, num_augm
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description='Video Data Augmentation for Sign Language Dataset')
-    parser.add_argument('--datafile', type=str, default='data/processed/extractor/train_100.json', help='Path to JSON file containing video information')
+    parser.add_argument('--datafile', type=str, default='data/raw/train_100.json', help='Path to JSON file containing video information')
     parser.add_argument('--video_root', type=str, default='data/raw/videos', help='Directory containing videos')
     parser.add_argument('--output_dir', type=str, default='data/processed/extractor', help='Directory to save augmented videos')
-    parser.add_argument('--num_augmentations', type=int, default=7, help='Number of augmented versions to create per video (default: 3)')
+    parser.add_argument('--num_augmentations', type=int, default=3, help='Number of augmented versions to create per video (default: 3)')
     
     args = parser.parse_args()
     with open(args.datafile) as f:

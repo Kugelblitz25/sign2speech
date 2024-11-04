@@ -91,8 +91,16 @@ chmod +x trainer.sh
 
 ## Testing
 
-Chenge the input video location and output audio location in `test.py`
+Change the input video location and output audio location in `test.py`
 
 ```shell
 python3 test.py
+```
+
+## Gradio Interface
+
+For gradio interface run 
+
+```shell
+python3 ui.py
 ```

@@ -20,7 +20,6 @@ def process_json(json_path: str, video_root: str, classlist_path: str) -> tuple[
         classlist = [word.strip() for word in f.readlines()]
 
     data = [item for item in data if item['gloss'] in classlist]
-
     video_root = Path(video_root)
     train_data = []
     test_data = []
@@ -94,4 +93,4 @@ if __name__ == "__main__":
     parser.add_argument('--output_folder', type=str, default='data/processed/extractor', help='Directory to save outputs')
     args = parser.parse_args()
 
-    main(args.json_path, args.classlist_path, args.video_root, args.output_folder, args.n_classes)
+    main(args.json_path, args.classlist_path, args.video_root, args.output_folder)
