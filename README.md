@@ -89,6 +89,10 @@ chmod +x trainer.sh
 ./trainer.sh
 ```
 
+## Pre-trained weights
+
+Download our pretrained weights from [Google Drive](https://drive.google.com/drive/folders/150wd1GsVxnIXq3btG0EEhhXS9gBYnJ2f?usp=sharing). Save the extractor weights to `models/extractor/checkpoints` and transformer weights to `models/transformer/checkpoints`.
+
 ## Testing
 
 Change the input video location and output audio location in `test.py`
