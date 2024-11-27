@@ -20,16 +20,16 @@ def parse_log(log_content: str) -> tuple[list]:
     val_acc = []
 
     # Regular expression pattern for extracting data
-    pattern = r"Epoch (\d+)/\d+, Train Loss: ([\d.]+), Val Loss: ([\d.]+), Train Accuracy: ([\d.]+)%, Val Accuracy: ([\d.]+)%"
+    pattern = r"Train Loss: ([\d.]+), Val Loss: ([\d.]+), Train Accuracy: ([\d.]+)%, Val Accuracy: ([\d.]+)%"
 
     # Extract data
     for match in re.finditer(pattern, log_content):
-        epochs.append(int(match.group(1)))
-        train_loss.append(float(match.group(2)))
-        val_loss.append(float(match.group(3)))
-        train_acc.append(float(match.group(4)))
-        val_acc.append(float(match.group(5)))
-    
+        train_loss.append(float(match.group(1)))
+        val_loss.append(float(match.group(2)))
+        train_acc.append(float(match.group(3)))
+        val_acc.append(float(match.group(4)))
+
+    epochs = list(range(1, len(train_acc)+1))
     return epochs, train_loss, val_loss, train_acc, val_acc
 
 def plot_experiment(log_path: str) -> None:
@@ -47,4 +47,4 @@ def plot_experiment(log_path: str) -> None:
     plt.show()
 
 if __name__ == "__main__":
-    plot_experiment('experiments/output_aug_5.log')
+    plot_experiment('train.log')
