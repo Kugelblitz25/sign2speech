@@ -3,3 +3,5 @@ experiments
 checkpoints
 .venv
 __pycache__
+*.log
+uv.lock

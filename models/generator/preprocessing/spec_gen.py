@@ -2,15 +2,14 @@ from pathlib import Path
 import pandas as pd
 import torch
 import json
-from nemo.collections.tts.models import Tacotron2Model
+from speechbrain.inference.TTS import Tacotron2
 
-tacotron2 = Tacotron2Model.from_pretrained("tts_en_tacotron2")
-tacotron2.eval()
+
+tacotron2 = Tacotron2.from_hparams(source="speechbrain/tts-tacotron2-ljspeech", savedir="models/generator/checkpoints/tts-tacotron2", run_opts={"device":"cuda"})
 
 def generate_spec(word):
-    tokens = tacotron2.parse(word)
-    spectrogram = tacotron2.generate_spectrogram(tokens=tokens)
-    return spectrogram
+    mel_output, *_ = tacotron2.encode_text(word)
+    return mel_output
 
 def process_words(n_words, json_data):
     spectrograms = {}
@@ -29,6 +28,8 @@ def process_words(n_words, json_data):
         spectrograms[words[i]] = spectrogram
         count += 1
         i += 1
+        if (count+1)%10 == 0:
+            print(f"{count+1} spectorams generated.")
 
     for word, spectrogram in spectrograms.items():
         padded_spectrogram = torch.nn.functional.pad(
