@@ -8,10 +8,7 @@ class ModifiedI3D(nn.Module):
         self.i3d = i3d_r50(pretrained=True)
         self.i3d.blocks = self.i3d.blocks[:-1]
 
-        self.features = nn.Sequential(
-            nn.AdaptiveAvgPool3d((1,1,1)),
-            nn.Flatten()
-        )
+        self.features = nn.Sequential(nn.AdaptiveAvgPool3d((1, 1, 1)), nn.Flatten())
         self.classifier = nn.Sequential(
             nn.Linear(2048, 1024),
             nn.BatchNorm1d(1024),
@@ -24,7 +21,7 @@ class ModifiedI3D(nn.Module):
             # nn.BatchNorm(256),
             # nn.ReLU(),
             nn.Dropout(0.3),
-            nn.Linear(1024, num_classes)
+            nn.Linear(1024, num_classes),
         )
 
     def forward(self, x):
@@ -32,5 +29,3 @@ class ModifiedI3D(nn.Module):
         features = self.features(conv)
         output = self.classifier(features)
         return features, output
-
-

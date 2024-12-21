@@ -2,12 +2,14 @@ import re
 import matplotlib.pyplot as plt
 
 
-def plot(ax: plt.Axes, x: list[float], y_train: list[float],  y_val: list[float], label: str) -> None:
-    ax.plot(x, y_train, label=f'Train {label}')
-    ax.plot(x, y_val, label=f'Validation {label}')
-    ax.set_xlabel('Epoch')
+def plot(
+    ax: plt.Axes, x: list[float], y_train: list[float], y_val: list[float], label: str
+) -> None:
+    ax.plot(x, y_train, label=f"Train {label}")
+    ax.plot(x, y_val, label=f"Validation {label}")
+    ax.set_xlabel("Epoch")
     ax.set_ylabel(label)
-    ax.set_title(f'Training and Validation {label}')
+    ax.set_title(f"Training and Validation {label}")
     ax.legend()
 
 
@@ -29,8 +31,9 @@ def parse_log(log_content: str) -> tuple[list]:
         train_acc.append(float(match.group(3)))
         val_acc.append(float(match.group(4)))
 
-    epochs = list(range(1, len(train_acc)+1))
+    epochs = list(range(1, len(train_acc) + 1))
     return epochs, train_loss, val_loss, train_acc, val_acc
+
 
 def plot_experiment(log_path: str) -> None:
     with open(log_path) as f:
@@ -39,12 +42,13 @@ def plot_experiment(log_path: str) -> None:
     epochs, train_loss, val_loss, train_acc, val_acc = parse_log(log_content)
 
     fig, ax = plt.subplots(1, 2)
-    ax=ax.flatten()
-    plot(ax[0], epochs, train_loss, val_loss, 'Loss')
-    plot(ax[1], epochs, train_acc, val_acc, 'Accuracy')
+    ax = ax.flatten()
+    plot(ax[0], epochs, train_loss, val_loss, "Loss")
+    plot(ax[1], epochs, train_acc, val_acc, "Accuracy")
 
     plt.tight_layout()
     plt.show()
 
+
 if __name__ == "__main__":
-    plot_experiment('train.log')
+    plot_experiment("train.log")

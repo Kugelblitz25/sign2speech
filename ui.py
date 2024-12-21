@@ -6,6 +6,7 @@ import cv2
 
 model = Sign2Speech(hop_length=3, win_size=50, threshold=0.7)
 
+
 def predict(file: str):
     frames = []
     cap = cv2.VideoCapture(file)
@@ -23,11 +24,12 @@ def predict(file: str):
 
     return audio_path
 
+
 interface = gr.Interface(
-    fn=predict,                 
-    inputs=gr.Video(label="Input Video"),            
-    outputs=gr.Audio(label="Generated Audio"),           
-    title="Sign2Speech",    
+    fn=predict,
+    inputs=gr.Video(label="Input Video"),
+    outputs=gr.Audio(label="Generated Audio"),
+    title="Sign2Speech",
 )
 
 interface.launch(share=True)

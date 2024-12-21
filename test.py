@@ -8,6 +8,7 @@ import cv2
 
 model = Sign2Speech(hop_length=3, win_size=50, threshold=0.7)
 
+
 def predict(file):
     filename = Path(file).stem
     frames = []
@@ -22,11 +23,12 @@ def predict(file):
 
     audio = model(frames)
 
-    sf.write(f'outputs/{filename}.wav', audio, 22050)
+    sf.write(f"outputs/{filename}.wav", audio, 22050)
+
 
 print("Starting Predictions:")
 t1 = time.time()
-test_path = Path('test_videos')
+test_path = Path("test_videos")
 for video in test_path.iterdir():
     predict(video)
 t2 = time.time()
