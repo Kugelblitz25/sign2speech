@@ -4,7 +4,7 @@ from torch.utils.data import Dataset
 
 
 class SpectrogramDataset(Dataset):
-    def __init__(self, features_csv, spectrograms_csv):
+    def __init__(self, features_csv: str, spectrograms_csv: str):
         self.features_df = pd.read_csv(features_csv)
         feature_cols = [col for col in self.features_df.columns if "feature_" in col]
         self.words = self.features_df["gloss"]

@@ -10,6 +10,8 @@ from pytorchvideo.data.encoded_video import EncodedVideo
 from torchvision import transforms
 from tqdm import tqdm
 
+from utils import create_path, load_config
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -123,52 +125,31 @@ def augment_dataset(
     return augmented_data
 
 
-# Example usage
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Video Data Augmentation for Sign Language Dataset"
-    )
-    parser.add_argument(
-        "--datafile",
-        type=str,
-        default="data/raw/train_100.json",
-        help="Path to JSON file containing video information",
-    )
-    parser.add_argument(
-        "--video_root",
-        type=str,
-        default="data/raw/videos",
-        help="Directory containing videos",
-    )
-    parser.add_argument(
-        "--output_dir",
-        type=str,
-        default="data/processed/extractor",
-        help="Directory to save augmented videos",
-    )
-    parser.add_argument(
-        "--num_augmentations",
-        type=int,
-        default=3,
-        help="Number of augmented versions to create per video (default: 3)",
-    )
-
-    args = parser.parse_args()
-    with open(args.datafile) as f:
+def main(datafile: str, video_root: str, output_video_dir: str, num_augmentations: int):
+    with open(datafile) as f:
         data = json.load(f)
 
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(exist_ok=True, parents=True)
-    output_video_dir = output_dir / "videos"
-    output_video_dir.mkdir(exist_ok=True)
-
     augmented_data = augment_dataset(
-        data, Path(args.video_root), output_video_dir, args.num_augmentations
+        data, Path(video_root), output_video_dir, num_augmentations
     )
-    new_datafile = output_dir / Path(args.datafile).name
-    with open(new_datafile, "w") as f:
+
+    with open(datafile, "w") as f:
         json.dump(augmented_data, f, indent=4)
 
-    logging.info(f"Created {len(augmented_data)} augmented videos")
+    logging.info(f"Created {len(augmented_data)} augmented videos for {datafile}")
+
+
+# Example usage
+if __name__ == "__main__":
+    config = load_config("Video Data Augmentation for Sign Language Dataset")
+
+    train_datafile = config["data"]["processed"]["train_data"]
+    test_datafile = config["data"]["processed"]["test_data"]
+    video_root = config["data"]["raw"]["videos"]
+    output_videos_dir = config["data"]["processed"]["videos"]
+    num_augmentations = config["extractor"]["num_augmentations"]
+
+    output_video_dir = create_path(output_videos_dir)
+
+    main(train_datafile, video_root, output_videos_dir, num_augmentations)
+    main(test_datafile, video_root, output_videos_dir, num_augmentations)

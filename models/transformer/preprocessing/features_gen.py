@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 import pandas as pd
 import torch
@@ -9,31 +8,33 @@ from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset, video_transform
 from models.extractor.model import ModifiedI3D
-from utils import load_model_weights
+from utils import load_model_weights, create_path, load_config
 
 
-def extract_features(model, test_loader, save_path):
+def extract_features(
+    model, dataloader: DataLoader, save_path_train: str, save_path_test: str
+):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    save_path = Path(save_path)
-    save_path.mkdir(exist_ok=True)
+    save_path_train = create_path(save_path_train)
+    save_path_test = create_path(save_path_test)
     all_features = []
     all_video_ids = []
 
     model.eval()
     with torch.no_grad():
         for batch_idx, (inputs, labels) in enumerate(
-            tqdm(test_loader, desc=f"Feature Extraction")
+            tqdm(dataloader, desc=f"Feature Extraction")
         ):
             inputs, labels = inputs.to(device), labels.to(device)
             features, _ = model(inputs)
             features = features.cpu().numpy()
 
             # Get video IDs for this batch
-            start_idx = batch_idx * test_loader.batch_size
+            start_idx = batch_idx * dataloader.batch_size
             end_idx = start_idx + inputs.size(0)
             batch_video_ids = [
-                test_loader.dataset.data[i]["video_id"]
-                for i in range(start_idx, min(end_idx, len(test_loader.dataset)))
+                dataloader.dataset.data[i]["video_id"]
+                for i in range(start_idx, min(end_idx, len(dataloader.dataset)))
             ]
 
             # Store features and metadata
@@ -44,66 +45,50 @@ def extract_features(model, test_loader, save_path):
     df = pd.DataFrame(all_features, columns=feature_cols)
     df["video_id"] = all_video_ids
     video_to_gloss = {
-        item["video_id"]: item["gloss"] for item in test_loader.dataset.data
+        item["video_id"]: item["gloss"] for item in dataloader.dataset.data
     }
     df["gloss"] = df["video_id"].map(video_to_gloss)
 
     xtrain, xval = train_test_split(df, test_size=0.2)
-    xtrain.to_csv(save_path / "features_train.csv", index=False)
-    xval.to_csv(save_path / "features_val.csv", index=False)
-    print(f"Features saved to {save_path}")
+    xtrain.to_csv(save_path_train, index=False)
+    xval.to_csv(save_path_test, index=False)
+    print(f"Features saved to {save_path_train} and {save_path_test}")
 
 
-def main(test_data: str, video_root: str, weights: str, save_path: str):
+def main(
+    data_path: str,
+    num_words: int,
+    video_root: str,
+    weights: str,
+    save_path_train: str,
+    save_path_test: str,
+):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using Device: {device}")
 
-    with open(test_data) as f:
-        test_data = json.load(f)
+    with open(data_path) as f:
+        data = json.load(f)
 
     transform = video_transform()
-    test_dataset = WLASLDataset(test_data, video_root, transform=transform)
-    test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False, num_workers=4)
+    dataset = WLASLDataset(data, video_root, transform=transform)
+    dataloader = DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4)
 
-    num_classes = 100
-    model = ModifiedI3D(num_classes).to(device)
+    model = ModifiedI3D(num_words).to(device)
     model = load_model_weights(model, weights)
-    print(f"Num Classes: {num_classes}")
+    print(f"Num Classes: {num_words}")
 
-    extract_features(model, test_loader, save_path)
+    extract_features(model, dataloader, save_path_train, save_path_test)
 
 
 if __name__ == "__main__":
-    import argparse
+    config = load_config("Feature Generation for Spectrogram Generation")
+    data_path = config["data"]["processed"]["train_data"]
+    num_words = config["n_words"]
+    video_root = config["data"]["processed"]["videos"]
+    weights_path = config["transformer"]["extractor_weights"]
+    save_path_train = config["data"]["processed"]["vid_features_train"]
+    save_path_test = config["data"]["processed"]["vid_features_test"]
 
-    parser = argparse.ArgumentParser(
-        description="Feature Generation for Spectrogram Generation"
+    main(
+        data_path, num_words, video_root, weights_path, save_path_train, save_path_test
     )
-
-    parser.add_argument(
-        "--datafile",
-        type=str,
-        default="data/processed/extractor/train_100.json",
-        help="Path to the testing data JSON file",
-    )
-    parser.add_argument(
-        "--video_root",
-        type=str,
-        default="data/processed/extractor/videos",
-        help="Directory containing videos",
-    )
-    parser.add_argument(
-        "--weights_path",
-        type=str,
-        default="models/extractor/checkpoints/checkpoint_final.pt",
-        help="Path to load the model weights",
-    )
-    parser.add_argument(
-        "--save_path",
-        type=str,
-        default="data/processed/transformer",
-        help="Path to save the extracted features CSV file",
-    )
-
-    args = parser.parse_args()
-    main(args.datafile, args.video_root, args.weights_path, args.save_path)

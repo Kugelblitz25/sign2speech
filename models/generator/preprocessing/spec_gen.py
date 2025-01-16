@@ -1,23 +1,17 @@
-from pathlib import Path
 import pandas as pd
 import torch
 import json
+
+from utils import create_path, load_config
 from speechbrain.inference.TTS import Tacotron2
 
 
-tacotron2 = Tacotron2.from_hparams(
-    source="speechbrain/tts-tacotron2-ljspeech",
-    savedir="models/generator/checkpoints/tts-tacotron2",
-    run_opts={"device": "cuda"},
-)
-
-
-def generate_spec(word):
-    mel_output, *_ = tacotron2.encode_text(word)
+def generate_spec(word: str, model):
+    mel_output, *_ = model.encode_text(word)
     return mel_output
 
 
-def process_words(n_words, json_data):
+def process_words(n_words: int, json_data: dict, model):
     spectrograms = {}
     rows = []
 
@@ -27,7 +21,7 @@ def process_words(n_words, json_data):
     i = 0
     count = 0
     while count < n_words:
-        spectrogram = generate_spec(words[i])
+        spectrogram = generate_spec(words[i], model)
         if spectrogram.shape[2] > 88:
             i += 1
             continue
@@ -60,40 +54,37 @@ def process_words(n_words, json_data):
     return data
 
 
-def main(json_file: str, output_path: str, n_words: int):
-    output_path = Path(output_path)
-    output_path.mkdir(exist_ok=True, parents=True)
+def main(json_file: str, specs_path: str, classlist_path: str, n_words: int, model):
+    specs_path = create_path(specs_path)
+    classlist_path = create_path(classlist_path)
 
     with open(json_file, "r") as f:
         json_data = json.load(f)
 
-    data = process_words(n_words, json_data)
-    data.to_csv(output_path / "specs.csv", index=False)
+    data = process_words(n_words, json_data, model)
+    data.to_csv(specs_path, index=False)
 
     classes = data["word"].tolist()
-    with open(output_path / "classes.txt", "w") as f:
+    with open(classlist_path, "w") as f:
         f.write("\n".join(classes))
 
 
 if __name__ == "__main__":
-    import argparse
+    config = load_config(description="Generate spectrograms for words")
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--json_file",
-        type=str,
-        default="data/raw/WLASL_v0.3.json",
-        help="Path WLASL to the json file",
-    )
-    parser.add_argument(
-        "--output_path",
-        type=str,
-        default="data/processed/generator",
-        help="Path to save the processed data",
-    )
-    parser.add_argument(
-        "--n_words", type=int, default=100, help="Number of words to process"
+    json_file = config["data"]["raw"]["json"]
+    specs_path = config["data"]["processed"]["specs"]
+    classlist_path = config["data"]["processed"]["classlist"]
+    n_words = config["n_words"]
+    checkpoint_path = config["generator"]["checkpoints"]
+
+    checkpoint_path = create_path(checkpoint_path)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    tacotron2 = Tacotron2.from_hparams(
+        source="speechbrain/tts-tacotron2-ljspeech",
+        savedir=checkpoint_path / "tts-tacotron2",
+        run_opts={"device": device},
     )
 
-    args = parser.parse_args()
-    main(args.json_file, args.output_path, args.n_words)
+    main(json_file, specs_path, classlist_path, n_words, tacotron2)

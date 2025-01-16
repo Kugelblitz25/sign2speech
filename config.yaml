@@ -1,0 +1,51 @@
+n_words: 100
+
+data:
+  raw:
+    videos: data/raw/videos
+    json: data/raw/WLASL_v0.3.json
+  processed:
+    videos: data/processed/videos # preprocessed and augmented videos
+    classlist: data/processed/classes.txt # words used
+    train_data: data/processed/train.json
+    test_data: data/processed/test.json
+    specs: data/processed/specs.csv # spectograms
+    vid_features_train: data/processed/features_train.csv # features generated using extractor
+    vid_features_test: data/processed/features_test.csv # features generated using extractor
+
+extractor:
+  num_augmentations: 10
+  checkpoints: models/extractor/checkpoints
+  training:
+    epochs: 100
+    batch_size: 8
+    lr: 1e-4
+    weight_decay: 0.0
+    patience: 10
+    enable_earlystop: false
+    num_workers: 4
+
+transformer:
+  extractor_weights: models/extractor/checkpoints/checkpoint_final.pt # To create features before training
+  checkpoints: models/transformer/checkpoints
+  training:
+    epochs: 1000
+    batch_size: 32
+    lr: 1e-4
+    weight_decay: 0.0
+    patience: 30
+    enable_earlystop: true
+    num_workers: 4
+
+generator:
+  checkpoints: models/generator/checkpoints
+
+nms:
+  win_size: 50
+  hop_length: 3
+  overlap: 0
+  threshold: 0.7
+
+pipeline: # To use for complete pipeline
+  extractor_weights: models/extractor/checkpoints/checkpoint_final.pt 
+  transformer_weights: models/transformer/checkpoints/checkpoint_final.pt 

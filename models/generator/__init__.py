@@ -1,5 +1,10 @@
 from speechbrain.inference.vocoders import HIFIGAN
 import soundfile as sf
+from utils import load_config, create_path
+
+config = load_config("Generate Audio")
+checkpoint_path = config["generator"]["checkpoints"]
+checkpoint_path = create_path(checkpoint_path)
 
 
 class AudioGenerator:
@@ -7,7 +12,7 @@ class AudioGenerator:
         self.sr = 22050
         self.model = HIFIGAN.from_hparams(
             source="speechbrain/tts-hifigan-ljspeech",
-            savedir="models/generator/checkpoints/tts-hifigan-ljspeech",
+            savedir=checkpoint_path / "tts-hifigan-ljspeech",
         )
 
     def save_audio(self, audio_signal, output_path):
