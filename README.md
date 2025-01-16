@@ -103,7 +103,7 @@ python3 test.py
 
 ## Gradio Interface
 
-For gradio interface run 
+For gradio interface run
 
 ```shell
 python3 ui.py
