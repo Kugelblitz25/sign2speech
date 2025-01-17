@@ -8,7 +8,8 @@ from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset, video_transform
 from models.extractor.model import ModifiedI3D
-from utils import load_model_weights, create_path, load_config
+from utils.models import load_model_weights
+from utils.configs import create_path, load_config
 
 
 def extract_features(

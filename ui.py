@@ -1,7 +1,7 @@
 import gradio as gr
 from models import Sign2Speech
 import soundfile as sf
-from utils import load_config
+from utils.configs import load_config
 import tempfile
 import cv2
 

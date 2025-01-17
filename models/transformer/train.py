@@ -6,7 +6,9 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils import EarlyStopping, save_model, create_path, load_config
+from utils.training import EarlyStopping
+from utils.models import save_model
+from utils.configs import create_path, load_config
 
 from models.transformer.dataset import SpectrogramDataset
 from models.transformer.model import SpectrogramGenerator

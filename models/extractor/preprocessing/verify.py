@@ -1,6 +1,4 @@
-import argparse
 import json
-import yaml
 import logging
 from pathlib import Path
 
@@ -9,7 +7,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset, video_transform
-from utils import create_path, load_config
+from utils.configs import create_path, load_config
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
