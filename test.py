@@ -2,7 +2,7 @@ import time
 from pathlib import Path
 
 from models import Sign2Speech
-from utils import load_config
+from utils.configs import load_config
 
 import soundfile as sf
 import cv2

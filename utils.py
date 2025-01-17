@@ -71,3 +71,4 @@ def load_config(desc: str):
         config = yaml.safe_load(f)
 
     return config
+

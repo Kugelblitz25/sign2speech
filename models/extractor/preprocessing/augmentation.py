@@ -10,7 +10,7 @@ from pytorchvideo.data.encoded_video import EncodedVideo
 from torchvision import transforms
 from tqdm import tqdm
 
-from utils import create_path, load_config
+from utils.configs import create_path, load_config
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"

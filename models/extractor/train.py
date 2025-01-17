@@ -9,7 +9,9 @@ from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset, video_transform
 from models.extractor.model import ModifiedI3D
-from utils import EarlyStopping, save_model, load_config, create_path
+from utils.training import EarlyStopping
+from utils.models import save_model
+from utils.configs import load_config, create_path
 
 
 class Trainer:

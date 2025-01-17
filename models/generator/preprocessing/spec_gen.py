@@ -2,7 +2,7 @@ import pandas as pd
 import torch
 import json
 
-from utils import create_path, load_config
+from utils.configs import create_path, load_config
 from speechbrain.inference.TTS import Tacotron2
 
 

@@ -1,5 +1,5 @@
 import torch
-from utils import load_model_weights
+from utils.models import load_model_weights
 
 from models.transformer.model import SpectrogramGenerator
 
