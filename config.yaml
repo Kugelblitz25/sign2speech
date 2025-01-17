@@ -1,4 +1,4 @@
-n_words: 100
+n_words: 10
 
 data:
   raw:
@@ -19,10 +19,10 @@ extractor:
   training:
     epochs: 100
     batch_size: 8
-    lr: 1e-4
-    weight_decay: 0.0
+    lr: 1.e-4
+    weight_decay: 1.e-5
     patience: 10
-    enable_earlystop: false
+    enable_earlystop: true
     num_workers: 4
 
 transformer:
@@ -31,7 +31,7 @@ transformer:
   training:
     epochs: 1000
     batch_size: 32
-    lr: 1e-4
+    lr: 1.e-04
     weight_decay: 0.0
     patience: 30
     enable_earlystop: true

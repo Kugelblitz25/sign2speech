@@ -36,7 +36,7 @@ def process_json(
         gloss = item["gloss"]
         for instance in item["instances"]:
             tot_count += 1
-            if not (video_root / f'{instance["video_id"]}.mp4').exists():
+            if not (video_root / f"{instance['video_id']}.mp4").exists():
                 miss_count += 1
                 continue
 
@@ -50,7 +50,7 @@ def process_json(
                 train_data.append(data)
             else:
                 test_data.append(data)
-    logging.info(f"{tot_count-miss_count}/{tot_count} videos found.")
+    logging.info(f"{tot_count - miss_count}/{tot_count} videos found.")
     return train_data, test_data
 
 

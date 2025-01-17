@@ -29,7 +29,7 @@ def process_words(n_words: int, json_data: dict, model):
         count += 1
         i += 1
         if (count + 1) % 10 == 0:
-            print(f"{count+1} spectorams generated.")
+            print(f"{count + 1} spectorams generated.")
 
     for word, spectrogram in spectrograms.items():
         padded_spectrogram = torch.nn.functional.pad(
@@ -70,7 +70,7 @@ def main(json_file: str, specs_path: str, classlist_path: str, n_words: int, mod
 
 
 if __name__ == "__main__":
-    config = load_config(description="Generate spectrograms for words")
+    config = load_config("Generate spectrograms for words")
 
     json_file = config["data"]["raw"]["json"]
     specs_path = config["data"]["processed"]["specs"]

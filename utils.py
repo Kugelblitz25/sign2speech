@@ -46,10 +46,10 @@ def load_model_weights(model, path):
 
 def create_path(path_str: str):
     path = Path(path_str)
-    if path.is_dir():
-        path.mkdir(exists_ok=True, parents=True)
+    if not path.suffix:
+        path.mkdir(exist_ok=True, parents=True)
     else:
-        path.parent.mkdir(exists_ok=True, parents=True)
+        path.parent.mkdir(exist_ok=True, parents=True)
     return path
 
 

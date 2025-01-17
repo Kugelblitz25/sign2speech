@@ -10,14 +10,15 @@ from models.nms import NMS
 class Sign2Speech:
     def __init__(
         self,
+        num_words: int,
         hop_length: int,
         win_size: int,
         overlap: int,
         threshold: float,
-        extractor_checkpoint,
-        transformer_checkpoint,
+        extractor_checkpoint: str,
+        transformer_checkpoint: str,
     ):
-        self.extractor = FeatureExtractor(extractor_checkpoint)
+        self.extractor = FeatureExtractor(extractor_checkpoint, num_words)
         self.transformer = FeatureTransformer(transformer_checkpoint)
         self.generator = AudioGenerator()
         self.fps = 30

@@ -55,7 +55,7 @@ class Trainer:
         correct_train = 0
         total_train = 0
         for inputs, labels in tqdm(
-            self.train_loader, desc=f"Epoch {epoch+1}/{self.train_config['epochs']}"
+            self.train_loader, desc=f"Epoch {epoch + 1}/{self.train_config['epochs']}"
         ):
             inputs, labels = inputs.to(self.device), labels.to(self.device)
             self.optimizer.zero_grad()
@@ -96,8 +96,8 @@ class Trainer:
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = optim.Adam(
             self.model.parameters(),
-            lr=self.train_config["lr"],
-            weight_decay=self.train_config["weight_decay"],
+            lr=float(self.train_config["lr"]),
+            weight_decay=float(self.train_config["weight_decay"]),
         )
         early_stopping = EarlyStopping(
             patience=self.train_config["patience"], verbose=True

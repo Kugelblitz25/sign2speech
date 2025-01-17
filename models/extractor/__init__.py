@@ -8,7 +8,7 @@ from utils import load_model_weights
 
 
 class FeatureExtractor:
-    def __init__(self, weights_path: str, num_classes: int = 100):
+    def __init__(self, weights_path: str, num_classes: int):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = ModifiedI3D(num_classes).to(self.device)
         self.model = load_model_weights(self.model, weights_path)

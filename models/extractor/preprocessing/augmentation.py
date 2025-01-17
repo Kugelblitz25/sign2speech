@@ -125,7 +125,9 @@ def augment_dataset(
     return augmented_data
 
 
-def main(datafile: str, video_root: str, output_video_dir: str, num_augmentations: int):
+def main(
+    datafile: str, video_root: str, output_video_dir: Path, num_augmentations: int
+):
     with open(datafile) as f:
         data = json.load(f)
 
@@ -149,7 +151,7 @@ if __name__ == "__main__":
     output_videos_dir = config["data"]["processed"]["videos"]
     num_augmentations = config["extractor"]["num_augmentations"]
 
-    output_video_dir = create_path(output_videos_dir)
+    output_videos_dir = create_path(output_videos_dir)
 
     main(train_datafile, video_root, output_videos_dir, num_augmentations)
     main(test_datafile, video_root, output_videos_dir, num_augmentations)
