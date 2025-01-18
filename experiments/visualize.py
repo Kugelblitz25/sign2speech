@@ -9,6 +9,7 @@ import seaborn as sns
 from sklearn.metrics import confusion_matrix
 from models.extractor.dataset import WLASLDataset, video_transform
 from models.extractor.model import ModifiedI3D
+from pathlib import Path
 from utils import load_model_weights
 
 def plot_tsne(features, labels, save_path):
@@ -18,7 +19,7 @@ def plot_tsne(features, labels, save_path):
     plt.figure(figsize=(12, 8))
     unique_labels = np.unique(labels)
     scatter = plt.scatter(features_embedded[:, 0], features_embedded[:, 1], 
-                         c=[np.where(unique_labels == l)[0][0] for l in labels], alpha=0.6)
+                         c=[np.where(unique_labels == l)[0][0] for l in labels])
     plt.colorbar(scatter)
     plt.title("t-SNE Visualization of Features")
     plt.xlabel(r"$x_1$")
@@ -77,6 +78,7 @@ def extract_features(model, test_loader, save_path):
     all_features = np.array(all_features)
     all_labels = np.array(all_labels)
     all_predictions = np.array(all_predictions)
+    accuracy = np.mean(all_labels == all_predictions)
 
     classes = sorted(list(set(item["gloss"] for item in test_loader.dataset.data)))
     idx_to_class = {idx: cls for idx, cls in enumerate(classes)}
@@ -88,7 +90,6 @@ def extract_features(model, test_loader, save_path):
     plot_confusion_matrix(all_labels, all_predictions, save_path)
     
     # Calculate and save accuracy
-    accuracy = np.mean(all_labels == all_predictions)
     print(f"Overall Accuracy: {accuracy:.4f}")
     
 
@@ -107,6 +108,9 @@ def main(test_data: str, video_root: str, weights: str, save_path: str):
     model = ModifiedI3D(num_classes).to(device)
     model = load_model_weights(model, weights)
     print(f"Num Classes: {num_classes}")
+
+    save_path = Path(save_path)
+    save_path.mkdir(exist_ok=True, parents=True)
     
     extract_features(model, test_loader, save_path)
 

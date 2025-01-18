@@ -1,14 +1,14 @@
 {
-    "num_classes": 100,
+    "num_classes": 10,
     "batch_size": 8,
     "lr": 0.0001,
-    "weight_decay": 0.0,
+    "weight_decay": 1e-5,
     "epochs": 100,
     "patience": 10,
     "num_workers": 4,
-    "enable_earlystop": false,
-    "train_data": "data/processed/extractor/train_100.json",
-    "val_data": "data/processed/extractor/test_100.json",
+    "enable_earlystop": true,
+    "train_data": "data/processed/extractor/train_10.json",
+    "val_data": "data/processed/extractor/test_10.json",
     "video_root": "data/processed/extractor/videos",
     "output_path": "models/extractor/checkpoints"
 }
