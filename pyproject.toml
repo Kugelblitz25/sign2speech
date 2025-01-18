@@ -11,6 +11,7 @@ dependencies = [
     "pandas==2.2.3",
     "pytorchvideo==0.1.5",
     "scikit-learn==1.5.2",
+    "seaborn>=0.13.2",
     "soundfile==0.12.1",
     "speechbrain==1.0.2",
     "torch==2.5.1",
