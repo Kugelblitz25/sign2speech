@@ -1,17 +1,17 @@
-n_words: 10
+n_words: 2
 
 data:
   raw:
     videos: data/raw/videos
     json: data/raw/WLASL_v0.3.json
   processed:
-    videos: data/processed/videos # preprocessed and augmented videos
-    classlist: data/processed/classes.txt # words used
-    train_data: data/processed/train.json
-    test_data: data/processed/test.json
-    specs: data/processed/specs.csv # spectograms
-    vid_features_train: data/processed/features_train.csv # features generated using extractor
-    vid_features_test: data/processed/features_test.csv # features generated using extractor
+    videos: data/processed2/videos # preprocessed and augmented videos
+    classlist: data/processed2/classes.txt # words used
+    train_data: data/processed2/train.json
+    test_data: data/processed2/test.json
+    specs: data/processed2/specs.csv # spectograms
+    vid_features_train: data/processed2/features_train.csv # features generated using extractor
+    vid_features_test: data/processed2/features_test.csv # features generated using extractor
 
 extractor:
   num_augmentations: 10
