@@ -2,15 +2,15 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from models.extractor.dataset import preprocess_video
-from models.extractor.model import ModifiedI3D
+from models.extractor.dataset import transform
+from models.extractor.model import ModifiedX3D
 from utils import load_model_weights
 
 
 class FeatureExtractor:
     def __init__(self, weights_path: str, num_classes: int = 100):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = ModifiedI3D(num_classes).to(self.device)
+        self.model = ModifiedX3D(num_classes).to(self.device)
         self.model = load_model_weights(self.model, weights_path)
 
     def stack_frames(self, frames):
@@ -20,7 +20,7 @@ class FeatureExtractor:
 
     def __call__(self, frames: list[np.ndarray]):
         frames = self.stack_frames(frames)
-        frames = preprocess_video(frames).to(self.device).unsqueeze(0)
+        frames = transform(frames).to(self.device).unsqueeze(0)
         self.model.eval()
         with torch.no_grad():
             features, confs = self.model(frames)

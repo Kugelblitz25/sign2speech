@@ -2,8 +2,19 @@ import logging
 from pathlib import Path
 
 import torch
-import torchvision.transforms as transforms
 from pytorchvideo.data.encoded_video import EncodedVideo
+
+from torchvision.transforms import Compose, Lambda
+from torchvision.transforms._transforms_video import (
+    CenterCropVideo,
+    NormalizeVideo,
+)
+from pytorchvideo.transforms import (
+    ApplyTransformToKey,
+    ShortSideScale,
+    UniformTemporalSubsample
+)
+
 from torch.utils.data import Dataset
 
 logging.basicConfig(
@@ -11,8 +22,35 @@ logging.basicConfig(
 )
 
 
+# Model specific
+side_size = 182
+crop_size = 182
+num_frames = 13
+sampling_rate = 6
+mean = [0.45, 0.45, 0.45]
+std = [0.225, 0.225, 0.225]
+frames_per_second = 30  
+
+# The duration of the input clip is also specific to the model.
+clip_duration = (num_frames * sampling_rate)/frames_per_second
+
+transform = ApplyTransformToKey(
+    key="video",
+    transform=Compose(
+        [
+            UniformTemporalSubsample(num_frames),
+            Lambda(lambda x: x/255.0),
+            NormalizeVideo(mean, std),
+            ShortSideScale(size=side_size),
+            CenterCropVideo(
+                crop_size=(crop_size, crop_size)
+            )
+        ]
+    ),
+)
+
 class WLASLDataset(Dataset):
-    def __init__(self, data, video_dir, transform=None) -> None:
+    def __init__(self, data, video_dir) -> None:
         self.data = data
         self.video_dir = Path(video_dir)
         self.transform = transform
@@ -28,41 +66,10 @@ class WLASLDataset(Dataset):
         label = self.class_to_idx[item["gloss"]]
         try:
             video = EncodedVideo.from_path(video_path)
-            video_data = video.get_clip(start_sec=0, end_sec=video.duration)
-            video_data = video_data["video"]
-            video_data = preprocess_video(video_data, self.transform)
+            video_data = video.get_clip(start_sec=0, end_sec=clip_duration)
+            video_data = transform(video_data)
+            return video_data["video"], label
         except Exception as e:
             logging.warning(f"Failed to load video {video_path}: {str(e)}")
             return torch.zeros((3, 32, 224, 224)), label
-        return video_data, label
 
-
-def video_transform():
-    return transforms.Compose(
-        [
-            transforms.ToPILImage(),
-            transforms.Resize((256, 256)),
-            transforms.CenterCrop((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.45, 0.45, 0.45], std=[0.225, 0.225, 0.225]),
-        ]
-    )
-
-
-def preprocess_video(video_data, transform=video_transform()):
-    if transform:
-        transformed_frames = []
-        for i in range(video_data.shape[1]):
-            frame = video_data[:, i, :, :]
-            transformed_frames.append(transform(frame))
-        video_data = torch.stack(transformed_frames, dim=1)
-
-    # Ensure we have exactly 32 frames
-    if video_data.shape[1] > 32:
-        step = video_data.shape[1] // 32
-        video_data = video_data[:, ::step, :, :][:, :32, :, :]
-    elif video_data.shape[1] < 32:
-        padding = torch.zeros((3, 32 - video_data.shape[1], 224, 224))
-        video_data = torch.cat([video_data, padding], dim=1)
-
-    return video_data

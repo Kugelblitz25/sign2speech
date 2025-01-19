@@ -5,16 +5,18 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "librosa==0.10.2.post1",
-    "matplotlib==3.9.2",
-    "opencv-contrib-python==4.10.0.84",
-    "pandas==2.2.3",
-    "pytorchvideo==0.1.5",
-    "scikit-learn==1.5.2",
+    "librosa>=0.10.2.post1",
+    "matplotlib>=3.10.0",
+    "opencv-contrib-python>=4.11.0.86",
+    "pandas>=2.2.3",
+    "pytorchvideo>=0.1.5",
+    "scikit-learn>=1.6.1",
     "seaborn>=0.13.2",
-    "soundfile==0.12.1",
-    "speechbrain==1.0.2",
-    "torch==2.5.1",
-    "torchvision==0.20.1",
-    "transformers>=4.48.0",
+    "soundfile>=0.13.0",
+    "speechbrain>=1.0.2",
+    "torch>=2.5.1",
+    "torchvision>=0.20.1",
 ]
+
+[tool.uv.sources]
+pytorchvideo = { git = "https://github.com/facebookresearch/pytorchvideo" }

@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from models.extractor.dataset import WLASLDataset, video_transform
+from models.extractor.dataset import WLASLDataset
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -54,7 +54,7 @@ def process_json(
 
 def verify_videos(data: video_data, video_root: str):
     # Create dataset and dataloader
-    dataset = WLASLDataset(data, video_root, transform=video_transform())
+    dataset = WLASLDataset(data, video_root)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=4)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

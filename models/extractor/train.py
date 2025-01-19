@@ -7,17 +7,17 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from models.extractor.dataset import WLASLDataset, video_transform
+from models.extractor.dataset import WLASLDataset
+from models.extractor.model import ModifiedX3D
 from utils import EarlyStopping, save_model
 
 
 class Trainer:
-    def __init__(self, config, model_name):
+    def __init__(self, config):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.config = config
         self.output_path = Path(self.config["output_path"])
         self.output_path.mkdir(exist_ok=True)
-        self.transform = video_transform()
         print(f"Using Device: {self.device}")
 
         with open(self.config["train_data"]) as f:
@@ -28,23 +28,13 @@ class Trainer:
 
         print(f"Num Classes: {self.config['num_classes']}")
 
-        self.model = self.load_model(model_name, self.config["num_classes"]).to(self.device)
+        self.model = ModifiedX3D(self.config['num_classes']).to(self.device)
         self.train_loader = self.get_dataloader(self.train_data)
         self.val_loader = self.get_dataloader(self.val_data)
-
-    def load_model(self, model_name, num_classes):
-        if model_name == "i3d":
-            from models.extractor.model import ModifiedI3D
-            return ModifiedI3D(num_classes)
-        # elif model_name == "r2d1d":
-        #     from models.extractor.model import ModifiedR2Plus1D
-        #     return ModifiedR2Plus1D(num_classes)
-        else:
-            raise ValueError(f"Model {model_name} is not supported")
             
     def get_dataloader(self, data):
         dataset = WLASLDataset(
-            data, self.config["video_root"], transform=self.transform
+            data, self.config["video_root"]
         )
         dataloader = DataLoader(
             dataset,
@@ -158,18 +148,11 @@ if __name__ == "__main__":
         default="models/extractor/config.json",
         help="Path to the config file",
     )
-
-    parser.add_argument(
-        "--model",
-        type=str,
-        default="i3d",
-        help="Model to be used for training ('i3d','r2d1d')"
-        )
     
     args = parser.parse_args()
 
     with open(args.config) as f:
         config = json.load(f)
 
-    trainer = Trainer(config, args.model)
+    trainer = Trainer(config)
     trainer.train()
