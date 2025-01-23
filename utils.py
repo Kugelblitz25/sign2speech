@@ -34,9 +34,8 @@ def save_model(model, optimizer, config, loss, path):
     torch.save(save_data, path)
 
 
-def load_model_weights(model, path):
+def load_model_weights(model, path, device):
     print(f"Weights Loaded from {path}")
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     weights = torch.load(path, weights_only=True, map_location=device)[
         "model_state_dict"
     ]

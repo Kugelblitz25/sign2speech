@@ -6,14 +6,12 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-
 from models.extractor.dataset import WLASLDataset
-from models.extractor.model import ModifiedX3D
 from utils import EarlyStopping, save_model
 
 
 class Trainer:
-    def __init__(self, config):
+    def __init__(self, config, model_name, freeze):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.config = config
         self.output_path = Path(self.config["output_path"])
@@ -28,9 +26,34 @@ class Trainer:
 
         print(f"Num Classes: {self.config['num_classes']}")
 
-        self.model = ModifiedX3D(self.config['num_classes']).to(self.device)
+        self.model = self.load_model(model_name, self.config['num_classes'], freeze).to(self.device)
         self.train_loader = self.get_dataloader(self.train_data)
         self.val_loader = self.get_dataloader(self.val_data)
+        self.freeze = freeze
+    
+    def load_model(self, model_name, num_classes, freeze):
+        if model_name == "i3d":
+            from models.extractor.model import ModifiedI3D
+            model = ModifiedI3D(num_classes)
+            for i in range(freeze): 
+                for param in model.i3d.blocks[i].parameters():
+                    param.requires_grad = False
+            return model
+        elif model_name == "x3d":
+            from models.extractor.model import ModifiedX3D
+            model = ModifiedX3D(num_classes)
+            for i in range(freeze): 
+                for param in model.x3d.blocks[i].parameters():
+                    param.requires_grad = False
+            return model
+        elif model_name == "r2p1d":
+            from models.extractor.model import ModifiedR2P1D
+            model = ModifiedR2P1D(num_classes)
+            for i in range(freeze): 
+                for param in model.r2p1d.blocks[i].parameters():
+                    param.requires_grad = False
+            return model
+
             
     def get_dataloader(self, data):
         dataset = WLASLDataset(
@@ -87,6 +110,7 @@ class Trainer:
         val_acc = 100.0 * correct_val / total_val
         return val_acc, val_loss
 
+
     def train(self):
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = optim.Adam(
@@ -97,6 +121,9 @@ class Trainer:
         early_stopping = EarlyStopping(patience=self.config["patience"], verbose=True)
 
         # Training
+        best_train_acc = 0.0
+        best_test_acc = 0.0
+
         for epoch in range(self.config["epochs"]):
             train_acc, train_loss = self.train_epoch(epoch)
             val_acc, val_loss = self.validate()
@@ -113,8 +140,10 @@ class Trainer:
                     self.optimizer,
                     self.config,
                     val_loss,
-                    self.output_path / "checkpoint_best.pt",
+                    self.output_path / f"checkpoint_best_{self.model.name}.pt",
                 )
+                best_train_acc, best_test_acc = round(train_acc, 2), round(val_acc, 2)
+                
 
             if early_stopping.early_stop and self.config["enable_earlystop"]:
                 print("Early stopping triggered. Stopping training.")
@@ -123,17 +152,18 @@ class Trainer:
                     self.optimizer,
                     self.config,
                     val_loss,
-                    self.output_path / "checkpoint_final.pt",
+                    self.output_path / f"checkpoint_final_{self.model.name}.pt",
                 )
                 break
-
+        
         save_model(
             self.model,
             self.optimizer,
             self.config,
             val_loss,
-            self.output_path / "checkpoint_final.pt",
+            self.output_path / f"checkpoint_final_{self.model.name}.pt",
         )
+        return best_train_acc, best_test_acc, round(train_acc, 2), round(val_acc, 2)
 
 
 if __name__ == "__main__":
@@ -148,11 +178,28 @@ if __name__ == "__main__":
         default="models/extractor/config.json",
         help="Path to the config file",
     )
+
+    parser.add_argument(
+        "--model",
+        type = str,
+        default = "i3d",
+        choices=["x3d", "i3d", "r2p1d"],
+        help = "Model to be used for training (i3d, x3d, r2p1d)"
+    )
+    
+    parser.add_argument(
+        "--freeze",
+        type=int,
+        choices=range(0, 7),
+        default=0,
+        help="Number of layers to freeze"
+    )
     
     args = parser.parse_args()
 
     with open(args.config) as f:
         config = json.load(f)
 
-    trainer = Trainer(config)
-    trainer.train()
+    for i in range(5):
+        trainer = Trainer(config, args.model, args.freeze)
+        trainer.train(i+1)
