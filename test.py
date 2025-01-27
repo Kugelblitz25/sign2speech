@@ -2,11 +2,30 @@ import time
 from pathlib import Path
 
 from models import Sign2Speech
+from utils import load_config
 
 import soundfile as sf
 import cv2
 
-model = Sign2Speech(hop_length=3, win_size=50, threshold=0.7)
+config = load_config("Generate Audio")
+
+num_words = config["n_words"]
+win_size = config["nms"]["win_size"]
+hop_length = config["nms"]["hop_length"]
+threshold = config["nms"]["threshold"]
+overlap = config["nms"]["overlap"]
+extractor_checkpoint = config["pipeline"]["extractor_weights"]
+transformer_checkpoint = config["pipeline"]["transformer_weights"]
+
+model = Sign2Speech(
+    num_words=num_words,
+    hop_length=hop_length,
+    win_size=win_size,
+    overlap=overlap,
+    threshold=threshold,
+    extractor_checkpoint=extractor_checkpoint,
+    transformer_checkpoint=transformer_checkpoint,
+)
 
 
 def predict(file):
@@ -32,4 +51,4 @@ test_path = Path("test_videos")
 for video in test_path.iterdir():
     predict(video)
 t2 = time.time()
-print(f"Completed Predictions in {t2-t1:.2f}s")
+print(f"Completed Predictions in {t2 - t1:.2f}s")

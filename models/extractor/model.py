@@ -5,8 +5,8 @@ from pytorchvideo.models.hub import i3d_r50, x3d_s, r2plus1d_r50
 class ModifiedI3D(nn.Module):
     def __init__(self, num_classes: int = 2000):
         super().__init__()
-        self.i3d = i3d_r50(pretrained=True)
-        self.i3d.blocks = self.i3d.blocks[:-1]
+        self.backbone = i3d_r50(pretrained=True)
+        self.backbone.blocks = self.backbone.blocks[:-1]
         self.name = "i3d"
 
         self.features = nn.AvgPool3d(kernel_size=(4, 7, 7), stride=(1, 1, 1), padding=(0, 0, 0))
@@ -30,7 +30,7 @@ class ModifiedI3D(nn.Module):
         )
 
     def forward(self, x):
-        conv = self.i3d(x)
+        conv = self.backbone(x)
         features = self.features(conv)
 
         features = self.dropout(features).permute(0,2,3,4,1)
@@ -40,8 +40,8 @@ class ModifiedI3D(nn.Module):
 class ModifiedX3D(nn.Module):
     def __init__(self, num_classes: int = 2000):
         super().__init__()
-        self.x3d = x3d_s(pretrained=True)
-        self.x3d.blocks = self.x3d.blocks[:-1]
+        self.backbone = x3d_s(pretrained=True)
+        self.backbone.blocks = self.backbone.blocks[:-1]
         self.name = "x3d"
 
         self.features = nn.Sequential(
@@ -64,7 +64,7 @@ class ModifiedX3D(nn.Module):
         )
 
     def forward(self, x):
-        conv = self.x3d(x)
+        conv = self.backbone(x)
         features = self.features(conv)
         output = self.classifier(features)
         return features, output
@@ -73,8 +73,8 @@ class ModifiedX3D(nn.Module):
 class ModifiedR2P1D(nn.Module):
     def __init__(self, num_classes: int = 2000):
         super().__init__()
-        self.r2p1d = r2plus1d_r50(pretrained=True)
-        self.r2p1d.blocks = self.r2p1d.blocks[:-1]
+        self.backbone = r2plus1d_r50(pretrained=True)
+        self.backbone.blocks = self.backbone.blocks[:-1]
         self.name = "r2plus1d"
 
         self.features = nn.Sequential(
@@ -97,7 +97,7 @@ class ModifiedR2P1D(nn.Module):
         )
 
     def forward(self, x):
-        conv = self.r2p1d(x)
+        conv = self.backbone(x)
         features = self.features(conv)
         output = self.classifier(features)
         return features, output

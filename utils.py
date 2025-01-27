@@ -1,4 +1,5 @@
 import torch
+from pathlib import Path
 
 
 class EarlyStopping:
@@ -24,10 +25,9 @@ class EarlyStopping:
             self.counter = 0
 
 
-def save_model(model, optimizer, config, loss, path):
+def save_model(model, config, loss, path):
     save_data = {
         "model_state_dict": model.state_dict(),
-        "optimizer_state_dict": optimizer.state_dict(),
         "config": config,
         "loss": loss,
     }
@@ -41,3 +41,32 @@ def load_model_weights(model, path, device):
     ]
     model.load_state_dict(weights)
     return model
+
+
+def create_path(path_str: str):
+    path = Path(path_str)
+    if not path.suffix:
+        path.mkdir(exist_ok=True, parents=True)
+    else:
+        path.parent.mkdir(exist_ok=True, parents=True)
+    return path
+
+
+def load_config(desc: str):
+    import argparse
+    import yaml
+
+    parser = argparse.ArgumentParser(description=desc)
+
+    parser.add_argument(
+        "--config_file",
+        type=str,
+        default="config.yaml",
+        help="Path to the config file",
+    )
+    args = parser.parse_args()
+
+    with open(args.config_file, "r") as f:
+        config = yaml.safe_load(f)
+
+    return config

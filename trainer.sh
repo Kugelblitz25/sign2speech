@@ -10,8 +10,7 @@ echo "Loading and Verifying videos for 100 signs"
 python3 models/extractor/preprocessing/verify.py
 
 echo "Augment the videos to generate more data"
-python3 models/extractor/preprocessing/augmentation.py --datafile data/processed/extractor/train_100.json
-python3 models/extractor/preprocessing/augmentation.py --datafile data/processed/extractor/test_100.json
+python3 models/extractor/preprocessing/augmentation.py
 
 echo "Training Feature Extractor"
 python3 models/extractor/train.py
