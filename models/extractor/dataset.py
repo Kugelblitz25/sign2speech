@@ -25,7 +25,7 @@ logging.basicConfig(
 # Model specific
 side_size = 224
 crop_size = 224
-num_frames = 32
+num_frames = 64
 sampling_rate = 8
 mean = [0.45, 0.45, 0.45]
 std = [0.225, 0.225, 0.225]

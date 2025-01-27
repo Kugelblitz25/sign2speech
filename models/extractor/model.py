@@ -9,25 +9,31 @@ class ModifiedI3D(nn.Module):
         self.i3d.blocks = self.i3d.blocks[:-1]
         self.name = "i3d"
 
-        self.features = nn.Sequential(nn.AdaptiveAvgPool3d((1, 1, 1)), nn.Flatten())
+        self.features = nn.AvgPool3d(kernel_size=(4, 7, 7), stride=(1, 1, 1), padding=(0, 0, 0))
+        self.dropout = nn.Dropout(0.5, inplace=False)
+            #nn.Linear(2048, 1024),
+            #nn.BatchNorm1d(1024),
+            #nn.ReLU(),
+            #nn.Linear(1024, 512),
+            #nn.BatchNorm1d(512),
+            #nn.ReLU(),
+            #nn.Dropout(0.6),
+            #nn.Linear(512, 256),
+            #nn.BatchNorm1d(256),
+            #nn.ReLU(),
+            #nn.Dropout(0.6),
+
         self.classifier = nn.Sequential(
-            nn.Linear(2048, 1024),
-            nn.BatchNorm1d(1024),
-            nn.ReLU(),
-            nn.Linear(1024, 512),
-            nn.BatchNorm1d(512),
-            nn.ReLU(),
-            nn.Dropout(0.6),
-            nn.Linear(512, 256),
-            nn.BatchNorm1d(256),
-            nn.ReLU(),
-            nn.Dropout(0.6),
-            nn.Linear(256, num_classes),
+            nn.Linear(2048, num_classes, bias=True),
+            nn.AdaptiveAvgPool3d(1),
+            nn.Flatten()
         )
 
     def forward(self, x):
         conv = self.i3d(x)
         features = self.features(conv)
+
+        features = self.dropout(features).permute(0,2,3,4,1)
         output = self.classifier(features)
         return features, output
     

@@ -113,11 +113,14 @@ class Trainer:
 
     def train(self):
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = optim.Adam(
-            self.model.parameters(),
-            lr=self.config["lr"],
-            weight_decay=self.config["weight_decay"],
-        )
+        #self.optimizer = optim.Adam(
+            #self.model.parameters(),
+            #lr=self.config["lr"],
+            #weight_decay=self.config["weight_decay"],
+        #)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.config["lr"], momentum=0.9, weight_decay=self.config["weight_decay"])
+        # Learnng rate scheduler
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1, patience=5)
         early_stopping = EarlyStopping(patience=self.config["patience"], verbose=True)
 
         # Training
@@ -200,6 +203,5 @@ if __name__ == "__main__":
     with open(args.config) as f:
         config = json.load(f)
 
-    for i in range(5):
-        trainer = Trainer(config, args.model, args.freeze)
-        trainer.train(i+1)
+    trainer = Trainer(config, args.model, args.freeze)
+    trainer.train()

@@ -1,10 +1,10 @@
 {
     "num_classes": 10,
-    "batch_size": 8,
-    "lr": 1e-4,
+    "batch_size": 4,
+    "lr": 1e-3,
     "weight_decay": 0.0,
     "epochs": 100,
-    "patience": 5,
+    "patience": 20,
     "num_workers": 4,
     "enable_earlystop": true,
     "train_data": "data/processed/extractor/train_10.json",
