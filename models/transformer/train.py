@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils import EarlyStopping, save_model, create_path, load_config
+from utils import EarlyStopping, save_model, create_path, Config
 
 from models.transformer.dataset import SpectrogramDataset
 from models.transformer.model import SpectrogramGenerator
@@ -34,9 +34,9 @@ class Trainer:
         dataset = SpectrogramDataset(features_csv, spec_csv)
         dataloader = DataLoader(
             dataset,
-            batch_size=self.train_config["batch_size"],
+            batch_size=self.train_config.batch_size,
             shuffle=True,
-            num_workers=self.train_config["num_workers"],
+            num_workers=self.train_config.num_workers,
         )
         return dataloader
 
@@ -77,12 +77,12 @@ class Trainer:
 
     def train(self):
         self.criterion = nn.MSELoss()
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.train_config["lr"])
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.train_config.lr)
         early_stopping = EarlyStopping(
-            patience=self.train_config["patience"], verbose=True
+            patience=self.train_config.patience, verbose=True
         )
 
-        for epoch in range(self.train_config["epochs"]):
+        for epoch in range(self.train_config.epochs):
             train_loss = self.train_epoch(epoch)
             val_loss = self.validate()
             print(f"Train Loss = {train_loss:.4f}, Val Loss = {val_loss:.4f}")
@@ -97,7 +97,7 @@ class Trainer:
                     self.checkpoint_path / "checkpoint_best.pt",
                 )
 
-            if early_stopping.early_stop and self.train_config["enable_earlystop"]:
+            if early_stopping.early_stop and self.train_config.enable_earlystop:
                 print("Early stopping triggered. Stopping training.")
                 save_model(
                     self.model,
@@ -116,14 +116,13 @@ class Trainer:
 
 
 if __name__ == "__main__":
-    config = load_config("Transforming video features into spectrogram features")
-    train_data_path = config["data"]["processed"]["vid_features_train"]
-    val_data_path = config["data"]["processed"]["vid_features_test"]
-    specs_csv = config["data"]["processed"]["specs"]
-    checkpoint_path = config["transformer"]["checkpoints"]
-    train_config = config["transformer"]["training"]
-
+    config = Config("Transforming video features into spectrogram features")
+    
     trainer = Trainer(
-        train_data_path, val_data_path, specs_csv, train_config, checkpoint_path
+        config.data.processed.vid_features_train, 
+        config.data.processed.vid_features_test, 
+        config.data.processed.specs, 
+        config.transformer.training,
+        config.transformer.checkpoints 
     )
     trainer.train()

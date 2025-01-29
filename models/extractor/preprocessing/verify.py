@@ -1,69 +1,31 @@
-import argparse
-import json
-import yaml
 import logging
-from pathlib import Path
+import pandas as pd
+from collections import namedtuple
 
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from models.extractor.dataset import WLASLDataset, video_transform
-from utils import create_path, load_config
+from models.extractor.dataset import WLASLDataset
+from utils import create_path, Config
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
-video_data = list[dict[str, str]]
 
 
-def process_json(
-    json_path: str, video_root: str, classlist_path: str
-) -> tuple[video_data, video_data, list[str]]:
-    with open(json_path, "r") as f:
-        data = json.load(f)
-
-    with open(classlist_path, "r") as f:
-        classlist = set([word.strip() for word in f.readlines()])
-
-    data = [item for item in data if item["gloss"] in classlist]
-    video_root = Path(video_root)
-    train_data = []
-    test_data = []
-    miss_count = 0
-    tot_count = 0
-    for item in tqdm(data, desc="Processing JSON"):
-        gloss = item["gloss"]
-        for instance in item["instances"]:
-            tot_count += 1
-            if not (video_root / f"{instance['video_id']}.mp4").exists():
-                miss_count += 1
-                continue
-
-            split = instance["split"]
-            data = {
-                "gloss": gloss,
-                "video_id": instance["video_id"],
-                "bbox": instance["bbox"],
-            }
-            if split == "train":
-                train_data.append(data)
-            else:
-                test_data.append(data)
-    logging.info(f"{tot_count - miss_count}/{tot_count} videos found.")
-    return train_data, test_data
-
-
-def verify_videos(data: video_data, video_root: str):
+def verify_videos(datafile_path: str, video_root: str, classlist: set[str]) -> pd.DataFrame:
     # Create dataset and dataloader
+    data = pd.read_csv(datafile_path)
     dataset = WLASLDataset(data, video_root)
+    label_to_class = {val: key for key, val in dataset.class_to_idx.items()}
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=4)
 
     # Verify videos
     good_videos = []
-    for idx, (video_data, _) in enumerate(tqdm(dataloader, desc="Verifying videos")):
-        if not torch.all(video_data == 0):
-            good_videos.append(data[idx])
+    for idx, (video_data, label) in enumerate(tqdm(dataloader, desc="Verifying videos")):
+        if (not torch.all(video_data == 0)) and (label_to_class[label.numpy()[0]] in classlist):
+            good_videos.append(data.iloc[idx])
 
     # Report results
     total_videos = len(dataset)
@@ -72,37 +34,30 @@ def verify_videos(data: video_data, video_root: str):
         f"Verification complete. {successful_videos}/{total_videos} videos loaded successfully."
     )
 
-    return good_videos
+    return pd.concat(good_videos, axis=1).T
 
 
 def main(
-    json_path: str,
+    csvs_path: namedtuple,
     classlist_path: str,
     video_root: str,
-    train_data_path: str,
-    test_data_path: str,
+    verified_csvs_path: namedtuple
 ):
-    train_data_path = create_path(train_data_path)
-    test_data_path = create_path(test_data_path)
+    with open(classlist_path) as f:
+        classes = set([word.strip() for word in f.readlines()])
 
-    train_data, test_data = process_json(json_path, video_root, classlist_path)
-    train_data = verify_videos(train_data, video_root)
-    test_data = verify_videos(test_data, video_root)
-
-    with open(train_data_path, "w") as f:
-        json.dump(train_data, f, indent=4)
-
-    with open(test_data_path, "w") as f:
-        json.dump(test_data, f, indent=4)
+    for split in ["train", "test", "val"]:
+        csv_path = getattr(csvs_path, split)
+        verified_csv_path = create_path(getattr(verified_csvs_path, split))
+        verified_data = verify_videos(csv_path, video_root, classes)
+        verified_data.to_csv(verified_csv_path, index=False)
 
 
 if __name__ == "__main__":
-    config = load_config("Process video dataset for classification")
-
-    json_path = config["data"]["raw"]["json"]
-    video_root = config["data"]["raw"]["videos"]
-    classes_path = config["data"]["processed"]["classlist"]
-    train_data_path = config["data"]["processed"]["train_data"]
-    test_data_path = config["data"]["processed"]["test_data"]
-
-    main(json_path, classes_path, video_root, train_data_path, test_data_path)
+    config = Config("Process video dataset for classification")
+    
+    main(
+        config.data.raw.csvs, 
+        config.data.processed.classlist, 
+        config.data.raw.videos, 
+        config.data.processed.csvs,     )

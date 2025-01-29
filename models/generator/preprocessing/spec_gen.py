@@ -1,51 +1,44 @@
 import pandas as pd
 import torch
-import json
+from collections import Counter
 
-from utils import create_path, load_config
+from utils import create_path, Config
 from speechbrain.inference.TTS import Tacotron2
 
 
 def generate_spec(word: str, model):
     mel_output, *_ = model.encode_text(word)
-    return mel_output
-
-
-def process_words(n_words: int, json_data: dict, model):
-    spectrograms = {}
-    rows = []
-
-    sorted_data = sorted(json_data, key=lambda x: -len(x["instances"]))
-    words = [sorted_data[i]["gloss"] for i in range(len(sorted_data))]
-
-    i = 0
-    count = 0
-    while count < n_words:
-        spectrogram = generate_spec(words[i], model)
-        if spectrogram.shape[2] > 88:
-            i += 1
-            continue
-        spectrograms[words[i]] = spectrogram
-        count += 1
-        i += 1
-        if (count + 1) % 10 == 0:
-            print(f"{count + 1} spectorams generated.")
-
-    for word, spectrogram in spectrograms.items():
-        padded_spectrogram = torch.nn.functional.pad(
-            spectrogram,
+    if mel_output.shape[2] > 88:
+        return torch.zeros(80, 88)
+    padded_mel_output = torch.nn.functional.pad(
+            mel_output,
             [
                 0,
-                max(0, 88 - spectrogram.shape[2]),
+                max(0, 88 - mel_output.shape[2]),
                 0,
-                max(0, 80 - spectrogram.shape[1]),
+                max(0, 80 - mel_output.shape[1]),
             ],
             mode="constant",
             value=-15,
-        )
+        )    
+    return padded_mel_output
 
+
+def process_words(n_words: int, train_data: pd.DataFrame, model):
+    rows = []
+
+    freq = dict(Counter(train_data.Gloss.to_list()))
+    words = sorted(freq, key=lambda x: -freq[x])
+
+    # i = 0
+    # count = 0
+    # while count < n_words:
+    # Change back after proper gloss
+
+    for i in range(n_words):
+        spectrogram = generate_spec(words[i][:-1], model)
         rows.append(
-            [word] + padded_spectrogram.cpu().detach().numpy().flatten().tolist()
+            [words[i]] + spectrogram.cpu().detach().numpy().flatten().tolist()
         )
 
     data = pd.DataFrame(rows)
@@ -54,14 +47,12 @@ def process_words(n_words: int, json_data: dict, model):
     return data
 
 
-def main(json_file: str, specs_path: str, classlist_path: str, n_words: int, model):
+def main(train_data_path: str, specs_path: str, classlist_path: str, n_words: int, model):
     specs_path = create_path(specs_path)
     classlist_path = create_path(classlist_path)
 
-    with open(json_file, "r") as f:
-        json_data = json.load(f)
-
-    data = process_words(n_words, json_data, model)
+    train_data = pd.read_csv(train_data_path)
+    data = process_words(n_words, train_data, model)
     data.to_csv(specs_path, index=False)
 
     classes = data["word"].tolist()
@@ -70,15 +61,9 @@ def main(json_file: str, specs_path: str, classlist_path: str, n_words: int, mod
 
 
 if __name__ == "__main__":
-    config = load_config("Generate spectrograms for words")
+    config = Config("Generate spectrograms for words")
 
-    json_file = config["data"]["raw"]["json"]
-    specs_path = config["data"]["processed"]["specs"]
-    classlist_path = config["data"]["processed"]["classlist"]
-    n_words = config["n_words"]
-    checkpoint_path = config["generator"]["checkpoints"]
-
-    checkpoint_path = create_path(checkpoint_path)
+    checkpoint_path = create_path(config.generator.checkpoints)
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     tacotron2 = Tacotron2.from_hparams(
@@ -87,4 +72,10 @@ if __name__ == "__main__":
         run_opts={"device": device},
     )
 
-    main(json_file, specs_path, classlist_path, n_words, tacotron2)
+    main(
+        config.data.raw.csvs.train,
+        config.data.processed.specs, 
+        config.data.processed.classlist, 
+        config.n_words, 
+        tacotron2
+    )

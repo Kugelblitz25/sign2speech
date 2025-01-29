@@ -2,29 +2,21 @@ import time
 from pathlib import Path
 
 from models import Sign2Speech
-from utils import load_config
+from utils import Config
 
 import soundfile as sf
 import cv2
 
-config = load_config("Generate Audio")
-
-num_words = config["n_words"]
-win_size = config["nms"]["win_size"]
-hop_length = config["nms"]["hop_length"]
-threshold = config["nms"]["threshold"]
-overlap = config["nms"]["overlap"]
-extractor_checkpoint = config["pipeline"]["extractor_weights"]
-transformer_checkpoint = config["pipeline"]["transformer_weights"]
+config = Config("Generate Audio")
 
 model = Sign2Speech(
-    num_words=num_words,
-    hop_length=hop_length,
-    win_size=win_size,
-    overlap=overlap,
-    threshold=threshold,
-    extractor_checkpoint=extractor_checkpoint,
-    transformer_checkpoint=transformer_checkpoint,
+    num_words=config.n_words,
+    hop_length=config.nms.hop_length,
+    win_size=config.nms.win_size,
+    overlap=config.nms.overlap,
+    threshold=config.nms.threshold,
+    extractor_checkpoint=config.pipline.extractor_checkpoint,
+    transformer_checkpoint=config.pipline.transformer_checkpoint,
 )
 
 

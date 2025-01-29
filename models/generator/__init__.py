@@ -1,10 +1,9 @@
 from speechbrain.inference.vocoders import HIFIGAN
 import soundfile as sf
-from utils import load_config, create_path
+from utils import Config, create_path
 
-config = load_config("Generate Audio")
-checkpoint_path = config["generator"]["checkpoints"]
-checkpoint_path = create_path(checkpoint_path)
+config = Config("Generate Audio")
+checkpoint_path = create_path(config.generator.checkpoints)
 
 
 class AudioGenerator:

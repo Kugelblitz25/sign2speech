@@ -1,5 +1,8 @@
 import torch
 from pathlib import Path
+import argparse
+import yaml
+from collections import namedtuple
 
 
 class EarlyStopping:
@@ -25,7 +28,7 @@ class EarlyStopping:
             self.counter = 0
 
 
-def save_model(model, config, loss, path):
+def save_model(model, config: dict, loss: float, path: str):
     save_data = {
         "model_state_dict": model.state_dict(),
         "config": config,
@@ -52,21 +55,39 @@ def create_path(path_str: str):
     return path
 
 
-def load_config(desc: str):
-    import argparse
-    import yaml
+class Config:
+    def __init__(self, desc: str):
+        parser = argparse.ArgumentParser(description=desc)
 
-    parser = argparse.ArgumentParser(description=desc)
+        parser.add_argument(
+            "--config_file",
+            type=str,
+            default="config.yaml",
+            help="Path to the config file",
+        )
+        args = parser.parse_args()
 
-    parser.add_argument(
-        "--config_file",
-        type=str,
-        default="config.yaml",
-        help="Path to the config file",
-    )
-    args = parser.parse_args()
+        with open(args.config_file, "r") as f:
+            config = yaml.safe_load(f)
 
-    with open(args.config_file, "r") as f:
-        config = yaml.safe_load(f)
+        self.config = self.parse_dict('RootCFG', config)
 
-    return config
+        
+    def parse_dict(self, name: str, dictionary: dict) -> namedtuple:
+        nt = namedtuple(name, dictionary.keys())
+        processed_dict = {}
+        for key, value in dictionary.items():
+            if isinstance(value, dict):
+                processed_dict[key] = self.parse_dict(key, value)
+            elif isinstance(value, list):
+                processed_dict[key] = [
+                    self.parse_dict(f"item{i}", item) if isinstance(item, dict) else item 
+                    for i, item in enumerate(value)
+                ]
+            else:
+                processed_dict[key] = value
+
+        return nt(**processed_dict)
+    
+    def __getattr__(self, name: str):
+        return getattr(self.config, name)
