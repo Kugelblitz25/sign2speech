@@ -1,7 +1,7 @@
 import torch
-from utils import load_model_weights
 
 from models.transformer.model import SpectrogramGenerator
+from utils import load_model_weights
 
 
 class FeatureTransformer:

@@ -1,22 +1,20 @@
 import logging
-import pandas as pd
 from pathlib import Path
 
+import pandas as pd
 import torch
 from pytorchvideo.data.encoded_video import EncodedVideo
-
+from pytorchvideo.transforms import (
+    ApplyTransformToKey,
+    ShortSideScale,
+    UniformTemporalSubsample,
+)
+from torch.utils.data import Dataset
 from torchvision.transforms import Compose, Lambda
 from torchvision.transforms._transforms_video import (
     CenterCropVideo,
     NormalizeVideo,
 )
-from pytorchvideo.transforms import (
-    ApplyTransformToKey,
-    ShortSideScale,
-    UniformTemporalSubsample
-)
-
-from torch.utils.data import Dataset
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -30,25 +28,24 @@ num_frames = 64
 sampling_rate = 8
 mean = [0.45, 0.45, 0.45]
 std = [0.225, 0.225, 0.225]
-frames_per_second = 25 
+frames_per_second = 25
 
 # The duration of the input clip is also specific to the model.
-clip_duration = (num_frames * sampling_rate)/frames_per_second
+clip_duration = (num_frames * sampling_rate) / frames_per_second
 
 transform = ApplyTransformToKey(
     key="video",
     transform=Compose(
         [
             UniformTemporalSubsample(num_frames),
-            Lambda(lambda x: (x/255.0)*2 - 1),
+            Lambda(lambda x: (x / 255.0) * 2 - 1),
             # NormalizeVideo(mean, std),
             ShortSideScale(size=side_size),
-            CenterCropVideo(
-                crop_size=(crop_size, crop_size)
-            )
+            CenterCropVideo(crop_size=(crop_size, crop_size)),
         ]
     ),
 )
+
 
 class WLASLDataset(Dataset):
     def __init__(self, data: pd.DataFrame, video_dir: str) -> None:

@@ -1,20 +1,22 @@
 import logging
-import pandas as pd
 from collections import namedtuple
 
+import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
-from utils import create_path, Config
+from utils import Config, create_path
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
 
-def verify_videos(datafile_path: str, video_root: str, classlist: set[str]) -> pd.DataFrame:
+def verify_videos(
+    datafile_path: str, video_root: str, classlist: set[str]
+) -> pd.DataFrame:
     # Create dataset and dataloader
     data = pd.read_csv(datafile_path)
     dataset = WLASLDataset(data, video_root)
@@ -23,8 +25,12 @@ def verify_videos(datafile_path: str, video_root: str, classlist: set[str]) -> p
 
     # Verify videos
     good_videos = []
-    for idx, (video_data, label) in enumerate(tqdm(dataloader, desc="Verifying videos")):
-        if (not torch.all(video_data == 0)) and (label_to_class[label.numpy()[0]] in classlist):
+    for idx, (video_data, label) in enumerate(
+        tqdm(dataloader, desc="Verifying videos")
+    ):
+        if (not torch.all(video_data == 0)) and (
+            label_to_class[label.numpy()[0]] in classlist
+        ):
             good_videos.append(data.iloc[idx])
 
     # Report results
@@ -41,7 +47,7 @@ def main(
     csvs_path: namedtuple,
     classlist_path: str,
     video_root: str,
-    verified_csvs_path: namedtuple
+    verified_csvs_path: namedtuple,
 ):
     with open(classlist_path) as f:
         classes = set([word.strip() for word in f.readlines()])
@@ -55,9 +61,10 @@ def main(
 
 if __name__ == "__main__":
     config = Config("Process video dataset for classification")
-    
+
     main(
-        config.data.raw.csvs, 
-        config.data.processed.classlist, 
-        config.data.raw.videos, 
-        config.data.processed.csvs,     )
+        config.data.raw.csvs,
+        config.data.processed.classlist,
+        config.data.raw.videos,
+        config.data.processed.csvs,
+    )

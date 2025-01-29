@@ -1,9 +1,11 @@
-import gradio as gr
-from models import Sign2Speech
-import soundfile as sf
-from utils import Config
 import tempfile
+
 import cv2
+import gradio as gr
+import soundfile as sf
+
+from models import Sign2Speech
+from utils import Config
 
 config = Config("Generate Audio")
 

@@ -6,10 +6,10 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils import EarlyStopping, save_model, create_path, Config
 
 from models.transformer.dataset import SpectrogramDataset
 from models.transformer.model import SpectrogramGenerator
+from utils import Config, EarlyStopping, create_path, save_model
 
 
 class Trainer:
@@ -117,12 +117,12 @@ class Trainer:
 
 if __name__ == "__main__":
     config = Config("Transforming video features into spectrogram features")
-    
+
     trainer = Trainer(
-        config.data.processed.vid_features_train, 
-        config.data.processed.vid_features_test, 
-        config.data.processed.specs, 
+        config.data.processed.vid_features_train,
+        config.data.processed.vid_features_test,
+        config.data.processed.specs,
         config.transformer.training,
-        config.transformer.checkpoints 
+        config.transformer.checkpoints,
     )
     trainer.train()

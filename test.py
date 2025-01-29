@@ -1,11 +1,11 @@
 import time
 from pathlib import Path
 
+import cv2
+import soundfile as sf
+
 from models import Sign2Speech
 from utils import Config
-
-import soundfile as sf
-import cv2
 
 config = Config("Generate Audio")
 

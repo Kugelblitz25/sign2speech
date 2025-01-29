@@ -1,10 +1,10 @@
-from models.extractor import FeatureExtractor
-from models.transformer import FeatureTransformer
-from models.generator import AudioGenerator
-import numpy as np
 import librosa
+import numpy as np
 
+from models.extractor import FeatureExtractor
+from models.generator import AudioGenerator
 from models.nms import NMS
+from models.transformer import FeatureTransformer
 
 
 class Sign2Speech:

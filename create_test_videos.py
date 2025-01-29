@@ -1,11 +1,12 @@
 import json
+import logging
 import random
 from pathlib import Path
+
 import cv2
 import torch
 from pytorchvideo.data.encoded_video import EncodedVideo
 from tqdm import tqdm
-import logging
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"

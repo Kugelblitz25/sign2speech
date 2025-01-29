@@ -1,9 +1,10 @@
-import pandas as pd
-import torch
 from collections import Counter
 
-from utils import create_path, Config
+import pandas as pd
+import torch
 from speechbrain.inference.TTS import Tacotron2
+
+from utils import Config, create_path
 
 
 def generate_spec(word: str, model):
@@ -11,16 +12,16 @@ def generate_spec(word: str, model):
     if mel_output.shape[2] > 88:
         return torch.zeros(80, 88)
     padded_mel_output = torch.nn.functional.pad(
-            mel_output,
-            [
-                0,
-                max(0, 88 - mel_output.shape[2]),
-                0,
-                max(0, 80 - mel_output.shape[1]),
-            ],
-            mode="constant",
-            value=-15,
-        )    
+        mel_output,
+        [
+            0,
+            max(0, 88 - mel_output.shape[2]),
+            0,
+            max(0, 80 - mel_output.shape[1]),
+        ],
+        mode="constant",
+        value=-15,
+    )
     return padded_mel_output
 
 
@@ -37,9 +38,7 @@ def process_words(n_words: int, train_data: pd.DataFrame, model):
 
     for i in range(n_words):
         spectrogram = generate_spec(words[i][:-1], model)
-        rows.append(
-            [words[i]] + spectrogram.cpu().detach().numpy().flatten().tolist()
-        )
+        rows.append([words[i]] + spectrogram.cpu().detach().numpy().flatten().tolist())
 
     data = pd.DataFrame(rows)
     data.rename(columns={data.columns[0]: "word"}, inplace=True)
@@ -47,7 +46,9 @@ def process_words(n_words: int, train_data: pd.DataFrame, model):
     return data
 
 
-def main(train_data_path: str, specs_path: str, classlist_path: str, n_words: int, model):
+def main(
+    train_data_path: str, specs_path: str, classlist_path: str, n_words: int, model
+):
     specs_path = create_path(specs_path)
     classlist_path = create_path(classlist_path)
 
@@ -74,8 +75,8 @@ if __name__ == "__main__":
 
     main(
         config.data.raw.csvs.train,
-        config.data.processed.specs, 
-        config.data.processed.classlist, 
-        config.n_words, 
-        tacotron2
+        config.data.processed.specs,
+        config.data.processed.classlist,
+        config.n_words,
+        tacotron2,
     )

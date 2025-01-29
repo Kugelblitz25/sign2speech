@@ -1,8 +1,9 @@
-import torch
-from pathlib import Path
 import argparse
-import yaml
 from collections import namedtuple
+from pathlib import Path
+
+import torch
+import yaml
 
 
 class EarlyStopping:
@@ -70,9 +71,8 @@ class Config:
         with open(args.config_file, "r") as f:
             config = yaml.safe_load(f)
 
-        self.config = self.parse_dict('RootCFG', config)
+        self.config = self.parse_dict("RootCFG", config)
 
-        
     def parse_dict(self, name: str, dictionary: dict) -> namedtuple:
         nt = namedtuple(name, dictionary.keys())
         processed_dict = {}
@@ -81,13 +81,15 @@ class Config:
                 processed_dict[key] = self.parse_dict(key, value)
             elif isinstance(value, list):
                 processed_dict[key] = [
-                    self.parse_dict(f"item{i}", item) if isinstance(item, dict) else item 
+                    self.parse_dict(f"item{i}", item)
+                    if isinstance(item, dict)
+                    else item
                     for i, item in enumerate(value)
                 ]
             else:
                 processed_dict[key] = value
 
         return nt(**processed_dict)
-    
+
     def __getattr__(self, name: str):
         return getattr(self.config, name)

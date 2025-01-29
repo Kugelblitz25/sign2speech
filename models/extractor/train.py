@@ -9,15 +9,14 @@ from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
 from models.extractor.model import ModifiedI3D, ModifiedR2P1D, ModifiedX3D
-from utils import EarlyStopping, save_model, Config, create_path
-from models.extractor.dataset import WLASLDataset
-from utils import EarlyStopping, save_model
+from utils import Config, EarlyStopping, create_path, save_model
 
 models = {
     "i3d": ModifiedI3D,
     "x3d": ModifiedX3D,
     "r2p1d": ModifiedR2P1D,
 }
+
 
 class Trainer:
     def __init__(
@@ -30,11 +29,10 @@ class Trainer:
         train_config: namedtuple,
         checkpoint_path: str,
     ):
-        
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.train_config = train_config
         self.checkpoint_path = create_path(checkpoint_path)
-        
+
         print(f"Using Device: {self.device}")
 
         train_data = pd.read_csv(train_data_path)
@@ -45,19 +43,17 @@ class Trainer:
         self.model = self.load_model(model_name, num_classes).to(self.device)
         self.train_loader = self.get_dataloader(train_data, video_root)
         self.val_loader = self.get_dataloader(val_data, video_root)
-    
 
     def load_model(self, model_name, num_classes):
         model = models.get(model_name, None)
         if model is None:
             raise ValueError("Invalid Model Name")
         model = model(num_classes).to(self.device)
-        for i in range(self.train_config.freeze): 
+        for i in range(self.train_config.freeze):
             for param in model.backbone.blocks[i].parameters():
                 param.requires_grad = False
         return model
 
-            
     def get_dataloader(self, data: pd.DataFrame, video_root: str):
         dataset = WLASLDataset(data, video_root)
         dataloader = DataLoader(
@@ -111,7 +107,6 @@ class Trainer:
         val_acc = 100.0 * correct_val / total_val
         return val_acc, val_loss
 
-
     def train(self):
         self.criterion = nn.CrossEntropyLoss()
         self.optimizer = optim.Adam(
@@ -122,14 +117,26 @@ class Trainer:
         early_stopping = EarlyStopping(
             patience=self.train_config.patience, verbose=True
         )
-        #self.optimizer = optim.Adam(
-            #self.model.parameters(),
-            #lr=self.train_config.lr,
-            #weight_decay=self.train_config.weight_decay,
-        #)
-        optimizer = optim.SGD(self.model.parameters(), lr=self.train_config.lr, momentum=0.9, weight_decay=self.train_config.weight_decay)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=self.train_config.scheduler_factor, patience=self.train_config.scheduler_factor)
-        early_stopping = EarlyStopping(patience=self.train_config.patience, verbose=True)
+        # self.optimizer = optim.Adam(
+        # self.model.parameters(),
+        # lr=self.train_config.lr,
+        # weight_decay=self.train_config.weight_decay,
+        # )
+        optimizer = optim.SGD(
+            self.model.parameters(),
+            lr=self.train_config.lr,
+            momentum=0.9,
+            weight_decay=self.train_config.weight_decay,
+        )
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="min",
+            factor=self.train_config.scheduler_factor,
+            patience=self.train_config.scheduler_factor,
+        )
+        early_stopping = EarlyStopping(
+            patience=self.train_config.patience, verbose=True
+        )
 
         # Training
         best_train_acc = 0.0
@@ -151,28 +158,27 @@ class Trainer:
                     self.model,
                     self.train_config._asdict(),
                     val_loss,
-                    self.checkpoint_path/ f"checkpoint_best_{self.model.name}.pt",
+                    self.checkpoint_path / f"checkpoint_best_{self.model.name}.pt",
                 )
                 best_train_acc, best_test_acc = train_acc, val_acc
-                
 
             if early_stopping.early_stop and self.train_config.enable_earlystop:
                 print("Early stopping triggered. Stopping training.")
                 save_model(
                     self.model,
-                    self.train_config._asdict() ,
+                    self.train_config._asdict(),
                     val_loss,
-                    self.checkpoint_path/ f"checkpoint_final_{self.model.name}.pt",
+                    self.checkpoint_path / f"checkpoint_final_{self.model.name}.pt",
                 )
                 break
-        
+
         save_model(
             self.model,
             self.train_config._asdict(),
             val_loss,
-            self.checkpoint_path/ f"checkpoint_final_{self.model.name}.pt",
+            self.checkpoint_path / f"checkpoint_final_{self.model.name}.pt",
         )
-        
+
         return best_train_acc, best_test_acc, train_acc, val_acc
 
 
@@ -187,5 +193,5 @@ if __name__ == "__main__":
         config.extractor.model,
         config.extractor.training,
         config.extractor.checkpoints,
-    )    
+    )
     trainer.train()

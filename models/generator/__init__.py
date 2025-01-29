@@ -1,5 +1,6 @@
-from speechbrain.inference.vocoders import HIFIGAN
 import soundfile as sf
+from speechbrain.inference.vocoders import HIFIGAN
+
 from utils import Config, create_path
 
 config = Config("Generate Audio")

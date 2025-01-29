@@ -4,14 +4,14 @@ from collections import namedtuple
 from pathlib import Path
 
 import cv2
-import torch
-import pandas as pd
 import numpy as np
+import pandas as pd
+import torch
 import torchvision.transforms.functional as TF
 from pytorchvideo.data.encoded_video import EncodedVideo
 from tqdm import tqdm
 
-from utils import create_path, Config
+from utils import Config, create_path
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -49,6 +49,7 @@ def apply_augmentation(frames: list[np.ndarray]) -> list[np.ndarray]:
 
     return augmented_frames
 
+
 def save_video(frames, output_path, fps=25):
     height, width = frames[0].shape[1], frames[0].shape[2]
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
@@ -56,11 +57,7 @@ def save_video(frames, output_path, fps=25):
 
     for frame_tensor in frames:
         frame_np = (
-            (255 - frame_tensor * 255)
-            .byte()
-            .permute(1, 2, 0)
-            .numpy()
-            .astype("uint8")
+            (255 - frame_tensor * 255).byte().permute(1, 2, 0).numpy().astype("uint8")
         )
         frame_bgr = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
         out.write(frame_bgr)
@@ -75,7 +72,7 @@ def augment_dataset(
 
     for row in tqdm(range(len(data)), desc="Augmenting videos"):
         item = data.iloc[row]
-        video_path = video_root / item['Video file']
+        video_path = video_root / item["Video file"]
 
         try:
             # Load original video
@@ -90,7 +87,7 @@ def augment_dataset(
             # x1, x2 = max(0, x1 - 50), min(h, x2 + 50)
             # y1, y2 = max(0, y1 - 50), min(w, y2 + 50)
             for i in range(video_frames.shape[1]):
-                frame = video_frames[:, i, :, :]#y1:y2, x1:x2]
+                frame = video_frames[:, i, :, :]  # y1:y2, x1:x2]
                 processed_frames.append(frame)
 
             # Generate augmented versions
@@ -110,13 +107,16 @@ def augment_dataset(
 
 
 def main(
-    csvs_path: namedtuple, video_root: str, output_video_dir: Path, num_augmentations: int
+    csvs_path: namedtuple,
+    video_root: str,
+    output_video_dir: Path,
+    num_augmentations: int,
 ):
     for split in ["train", "test", "val"]:
         csv_path = getattr(csvs_path, split)
         data = pd.read_csv(csv_path)
         augmented_data = augment_dataset(
-        data, Path(video_root), output_video_dir, num_augmentations
+            data, Path(video_root), output_video_dir, num_augmentations
         )
         augmented_data.to_csv(csv_path, index=False)
 
@@ -130,8 +130,8 @@ if __name__ == "__main__":
     output_video_dir = create_path(config.data.processed.videos)
 
     main(
-        config.data.processed.csvs, 
-        config.data.raw.videos, 
-        output_video_dir, 
-        config.extractor.num_augmentations
+        config.data.processed.csvs,
+        config.data.raw.videos,
+        output_video_dir,
+        config.extractor.num_augmentations,
     )

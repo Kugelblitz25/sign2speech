@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset, video_transform
 from models.extractor.model import ModifiedI3D
-from utils import load_model_weights, create_path, Config
+from utils import Config, create_path, load_model_weights
 
 
 def extract_features(
@@ -82,12 +82,12 @@ def main(
 
 if __name__ == "__main__":
     config = Config("Feature Generation for Spectrogram Generation")
-    
+
     main(
-        config.data.processed.train_data, 
-        config.n_words, 
-        config.data.processed.videos, 
-        config.transformer.extractor_weights, 
+        config.data.processed.train_data,
+        config.n_words,
+        config.data.processed.videos,
+        config.transformer.extractor_weights,
         config.data.processed.vid_features_train,
-        config.data.processed.vid_features_test 
+        config.data.processed.vid_features_test,
     )
