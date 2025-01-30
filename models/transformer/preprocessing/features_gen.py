@@ -23,7 +23,7 @@ def extract_features(
     model.eval()
     with torch.no_grad():
         for batch_idx, (inputs, labels) in enumerate(
-            tqdm(dataloader, desc=f"Feature Extraction")
+            tqdm(dataloader, desc="Feature Extraction")
         ):
             inputs, labels = inputs.to(device), labels.to(device)
             features, _ = model(inputs)

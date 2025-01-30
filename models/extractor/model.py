@@ -27,6 +27,8 @@ class ModifiedI3D(nn.Module):
 
         self.classifier = nn.Sequential(
             nn.Linear(2048, num_classes, bias=True),
+        )
+        self.flatten = nn.Sequential(
             nn.AdaptiveAvgPool3d(1),
             nn.Flatten(),
         )
@@ -36,8 +38,8 @@ class ModifiedI3D(nn.Module):
         features = self.features(conv)
 
         features = self.dropout(features).permute(0, 2, 3, 4, 1)
-        output = self.classifier(features)
-        return features, output
+        output = self.classifier(features).permute(0, 4, 1, 2, 3)
+        return features, self.flatten(output)
 
 
 class ModifiedX3D(nn.Module):

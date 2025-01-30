@@ -1,11 +1,11 @@
-import json
+from collections import namedtuple
 
 import pandas as pd
 
 from models.extractor.train import Trainer
+from utils import Config
 
-with open("models/extractor/config.json") as f:
-    config = json.load(f)
+cfg = Config("Experimenting with different freeze layers and models")
 
 df = pd.DataFrame(
     columns=[
@@ -27,8 +27,21 @@ for model in ["i3d", "x3d"]:
             0.0,
             0.0,
         )
+        train_cfg = cfg.extractor.training._asdict()
+        train_cfg["freeze"] = freeze
+        trainCFG = namedtuple("trainCFG", train_cfg.keys())
+        train_cfg = trainCFG(**train_cfg)
+        print(train_cfg)
         for _ in range(num_tries):
-            trainer = Trainer(config, model, freeze)
+            trainer = Trainer(
+                cfg.data.processed.csvs.train,
+                cfg.data.processed.csvs.val,
+                cfg.data.processed.videos,
+                cfg.n_words,
+                model,
+                train_cfg,
+                cfg.extractor.checkpoints,
+            )
             a, b, c, d = trainer.train()
             best_train_acc += a
             best_test_acc += b

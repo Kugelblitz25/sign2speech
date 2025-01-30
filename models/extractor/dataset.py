@@ -13,7 +13,6 @@ from torch.utils.data import Dataset
 from torchvision.transforms import Compose, Lambda
 from torchvision.transforms._transforms_video import (
     CenterCropVideo,
-    NormalizeVideo,
 )
 
 logging.basicConfig(

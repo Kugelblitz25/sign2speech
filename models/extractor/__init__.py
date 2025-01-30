@@ -3,14 +3,14 @@ import torch
 import torch.nn.functional as F
 
 from models.extractor.dataset import transform
-from models.extractor.model import ModifiedX3D
+from models.extractor.model import ModifiedI3D
 from utils import load_model_weights
 
 
 class FeatureExtractor:
     def __init__(self, weights_path: str, num_classes: int):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = ModifiedX3D(num_classes).to(self.device)
+        self.model = ModifiedI3D(num_classes).to(self.device)
         self.model = load_model_weights(self.model, weights_path)
 
     def stack_frames(self, frames):

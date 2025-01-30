@@ -19,17 +19,17 @@ data:
     vid_features_test: data/asl-citizen/processed/features_test.csv # features generated using extractor
 
 extractor:
-  num_augmentations: 1
+  num_augmentations: 20
   checkpoints: models/extractor/checkpoints
   model: i3d
   training:
-    freeze: 3
+    freeze: 0
     epochs: 100
-    batch_size: 8
+    batch_size: 4
     lr: 1.e-3
     weight_decay: 1.e-8
-    patience: 20
-    scheduler_patience: 5
+    patience: 7
+    scheduler_patience: 3
     scheduler_factor: 0.3
     enable_earlystop: true
     num_workers: 4
@@ -56,5 +56,5 @@ nms:
   threshold: 0.7
 
 pipeline: # To use for complete pipeline
-  extractor_weights: models/extractor/checkpoints/checkpoint_final.pt 
+  extractor_weights: models/extractor/checkpoints/checkpoint_best_i3d.pt 
   transformer_weights: models/transformer/checkpoints/checkpoint_final.pt 

@@ -29,7 +29,6 @@ def apply_augmentation(frames: list[np.ndarray]) -> list[np.ndarray]:
     rotation_angle = random.uniform(-15, 15)
 
     # Random temporal sampling (speed variation)
-    n_frames = frames
     temporal_mask = torch.ones(len(frames))
     num_frames_to_drop = random.randint(0, len(frames) // 8)
     drop_indices = random.sample(range(len(frames)), num_frames_to_drop)

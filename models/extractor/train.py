@@ -94,7 +94,7 @@ class Trainer:
         total_val = 0
         self.model.eval()
         with torch.no_grad():
-            for inputs, labels in tqdm(self.val_loader, desc=f"Validation"):
+            for inputs, labels in tqdm(self.val_loader, desc="Validation"):
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 _, outputs = self.model(inputs)
                 loss = self.criterion(outputs, labels)
@@ -109,27 +109,20 @@ class Trainer:
 
     def train(self):
         self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = optim.Adam(
-            self.model.parameters(),
-            lr=float(self.train_config.lr),
-            weight_decay=float(self.train_config.weight_decay),
-        )
-        early_stopping = EarlyStopping(
-            patience=self.train_config.patience, verbose=True
-        )
+
         # self.optimizer = optim.Adam(
         # self.model.parameters(),
         # lr=self.train_config.lr,
         # weight_decay=self.train_config.weight_decay,
         # )
-        optimizer = optim.SGD(
+        self.optimizer = optim.SGD(
             self.model.parameters(),
             lr=self.train_config.lr,
             momentum=0.9,
             weight_decay=self.train_config.weight_decay,
         )
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer,
+            self.optimizer,
             mode="min",
             factor=self.train_config.scheduler_factor,
             patience=self.train_config.scheduler_factor,

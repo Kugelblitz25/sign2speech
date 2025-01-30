@@ -38,7 +38,7 @@ def save_model(model, config: dict, loss: float, path: str):
     torch.save(save_data, path)
 
 
-def load_model_weights(model, path, device):
+def load_model_weights(model, path: str, device: torch.device):
     print(f"Weights Loaded from {path}")
     weights = torch.load(path, weights_only=True, map_location=device)[
         "model_state_dict"
@@ -73,7 +73,7 @@ class Config:
 
         self.config = self.parse_dict("RootCFG", config)
 
-    def parse_dict(self, name: str, dictionary: dict) -> namedtuple:
+    def parse_dict(self, name: str, dictionary: dict):
         nt = namedtuple(name, dictionary.keys())
         processed_dict = {}
         for key, value in dictionary.items():
