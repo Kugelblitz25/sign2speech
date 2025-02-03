@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 from models.extractor.dataset import transform
 from models.extractor.model import ModifiedI3D
-from utils import load_model_weights
+from utils.model import load_model_weights
 
 
 class FeatureExtractor:

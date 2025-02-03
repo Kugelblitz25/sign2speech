@@ -3,7 +3,7 @@ from collections import namedtuple
 import pandas as pd
 
 from models.extractor.train import Trainer
-from utils import Config
+from utils.config import Config
 
 cfg = Config("Experimenting with different freeze layers and models")
 
@@ -18,7 +18,7 @@ df = pd.DataFrame(
     ]
 )
 
-num_tries = 5
+num_tries = 2
 for model in ["i3d", "x3d"]:
     for freeze in range(6):
         best_train_acc, best_test_acc, final_train_acc, final_test_acc = (
@@ -55,5 +55,4 @@ for model in ["i3d", "x3d"]:
             final_train_acc / num_tries,
             final_test_acc / num_tries,
         ]
-
-df.to_csv("experiments/freeze.csv", index=False)
+        df.to_csv("experiments/freeze.csv", index=False)

@@ -5,7 +5,7 @@ import cv2
 import soundfile as sf
 
 from models import Sign2Speech
-from utils import Config
+from utils.config import Config
 
 config = Config("Generate Audio")
 
@@ -22,18 +22,7 @@ model = Sign2Speech(
 
 def predict(file):
     filename = Path(file).stem
-    frames = []
-    cap = cv2.VideoCapture(file)
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-        frames.append(frame)
-
-    cap.release()
-
-    audio = model(frames)
-
+    audio = model(file)
     sf.write(f"outputs/{filename}.wav", audio, 22050)
 
 

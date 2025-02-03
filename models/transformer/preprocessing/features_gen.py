@@ -1,4 +1,5 @@
 import json
+from collections import namedtuple
 
 import pandas as pd
 import torch
@@ -6,9 +7,12 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from models.extractor.dataset import WLASLDataset, video_transform
+from models.extractor.dataset import WLASLDataset
 from models.extractor.model import ModifiedI3D
-from utils import Config, create_path, load_model_weights
+from utils.config import Config
+from utils.model import create_path, load_model_weights
+
+csvPaths = namedtuple("Paths", ["train", "test", "val"])
 
 
 def extract_features(
@@ -56,12 +60,11 @@ def extract_features(
 
 
 def main(
-    data_path: str,
+    data_path: csvPaths,
     num_words: int,
     video_root: str,
     weights: str,
-    save_path_train: str,
-    save_path_test: str,
+    save_path: csvPaths,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using Device: {device}")
@@ -69,12 +72,11 @@ def main(
     with open(data_path) as f:
         data = json.load(f)
 
-    transform = video_transform()
-    dataset = WLASLDataset(data, video_root, transform=transform)
+    dataset = WLASLDataset(data, video_root)
     dataloader = DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4)
 
     model = ModifiedI3D(num_words).to(device)
-    model = load_model_weights(model, weights)
+    model = load_model_weights(model, weights, device)
     print(f"Num Classes: {num_words}")
 
     extract_features(model, dataloader, save_path_train, save_path_test)
@@ -84,10 +86,9 @@ if __name__ == "__main__":
     config = Config("Feature Generation for Spectrogram Generation")
 
     main(
-        config.data.processed.train_data,
+        config.data.processed.csvs,
         config.n_words,
         config.data.processed.videos,
         config.transformer.extractor_weights,
-        config.data.processed.vid_features_train,
-        config.data.processed.vid_features_test,
+        config.data.processed.vid_features,
     )

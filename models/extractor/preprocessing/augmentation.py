@@ -11,7 +11,8 @@ import torchvision.transforms.functional as TF
 from pytorchvideo.data.encoded_video import EncodedVideo
 from tqdm import tqdm
 
-from utils import Config, create_path
+from utils.config import Config
+from utils.model import create_path
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -95,8 +96,9 @@ def augment_dataset(
                 video_file = item["Video file"]
                 new_video_path = output_dir / f"{i}_{video_file}"
                 save_video(augmented_frames, new_video_path)
-                item["Video file"] = f"{i}_{video_file}"
-                augmented_data.append(item)
+                new_item = item.copy()
+                new_item["Video file"] = f"{i}_{video_file}"
+                augmented_data.append(new_item)
 
         except Exception as e:
             logging.error(f"Failed to augment video {video_path}: {str(e)}")

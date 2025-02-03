@@ -7,7 +7,8 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
-from utils import Config, create_path
+from utils.config import Config
+from utils.model import create_path
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"

@@ -9,7 +9,8 @@ from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
 from models.extractor.model import ModifiedI3D, ModifiedR2P1D, ModifiedX3D
-from utils import Config, EarlyStopping, create_path, save_model
+from utils.config import Config
+from utils.model import EarlyStopping, create_path, save_model
 
 models = {
     "i3d": ModifiedI3D,

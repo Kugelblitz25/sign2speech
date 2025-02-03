@@ -6,7 +6,8 @@ from tqdm import tqdm
 
 from models.transformer.dataset import SpectrogramDataset
 from models.transformer.model import SpectrogramGenerator
-from utils import Config, EarlyStopping, create_path, save_model
+from utils.config import Config
+from utils.model import EarlyStopping, create_path, save_model
 
 
 class Trainer:

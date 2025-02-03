@@ -5,7 +5,7 @@ import gradio as gr
 import soundfile as sf
 
 from models import Sign2Speech
-from utils import Config
+from utils.config import Config
 
 config = Config("Generate Audio")
 
@@ -21,16 +21,7 @@ model = Sign2Speech(
 
 
 def predict(file: str):
-    frames = []
-    cap = cv2.VideoCapture(file)
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-        frames.append(frame)
-
-    cap.release()
-    audio = model(frames)
+    audio = model(file)
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_audio_file:
         sf.write(temp_audio_file.name, audio, 22050)
         audio_path = temp_audio_file.name

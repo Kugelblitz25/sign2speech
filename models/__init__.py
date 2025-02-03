@@ -1,5 +1,6 @@
 import librosa
 import numpy as np
+import cv2
 
 from models.extractor import FeatureExtractor
 from models.generator import AudioGenerator
@@ -40,9 +41,24 @@ class Sign2Speech:
                     )
             audio_concat = np.concatenate([audio_concat, audio])
         return audio_concat
+    
+    def get_frames(self, path: str) -> np.ndarray:
+        frame_list = []
+        cap = cv2.VideoCapture(path)
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame_list.append(frame)
+        cap.release()
+        return frame_list
 
-    def __call__(self, frames: list):
-        predictions = self.nms(frames)
+    def __call__(self, frames: list[np.ndarray] | str):
+        if isinstance(frames, str):
+            predictions = self.nms(self.get_frames(frames))
+        else:
+            predictions = self.nms(frames)
+            
         for frame_idx in predictions:
             spec = self.transformer(predictions[frame_idx])
             audio, _ = self.generator(spec)

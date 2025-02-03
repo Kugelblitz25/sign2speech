@@ -1,10 +1,12 @@
 from collections import Counter
 
+import numpy as np
 import pandas as pd
 import torch
 from speechbrain.inference.TTS import Tacotron2
 
-from utils import Config, create_path
+from utils.config import Config
+from utils.model import create_path
 
 
 def generate_spec(word: str, model):
@@ -22,7 +24,7 @@ def generate_spec(word: str, model):
         mode="constant",
         value=-15,
     )
-    return padded_mel_output
+    return padded_mel_output.cpu().detach().numpy()
 
 
 def process_words(n_words: int, train_data: pd.DataFrame, model):
@@ -31,15 +33,17 @@ def process_words(n_words: int, train_data: pd.DataFrame, model):
     freq = dict(Counter(train_data.Gloss.to_list()))
     words = sorted(freq, key=lambda x: -freq[x])
 
-    # i = 0
-    # count = 0
-    # while count < n_words:
-    # Change back after proper gloss
-
-    for i in range(n_words):
-        spectrogram = generate_spec(words[i][:-1], model)
-        rows.append([words[i]] + spectrogram.cpu().detach().numpy().flatten().tolist())
-
+    i = 0
+    count = 0
+    while count < n_words:
+        word = words[count][:-1].title()
+        spectrogram = generate_spec(word, model)
+        rows.append([words[count]] + spectrogram.flatten().tolist())
+        if np.allclose(spectrogram, 0):
+            print(word)
+            i += 1
+        count += 1
+    print(f"Bad Audio: {i}/{count}")
     data = pd.DataFrame(rows)
     data.rename(columns={data.columns[0]: "word"}, inplace=True)
 
