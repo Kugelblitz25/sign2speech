@@ -43,7 +43,7 @@ class Trainer:
         total_loss = 0
 
         for features, spectrograms in tqdm(
-            self.train_loader, f"Epoch {epoch}/{self.train_config['epochs']}"
+            self.train_loader, f"Epoch {epoch}/{self.train_config.epochs}"
         ):
             features = features.to(self.device)
             spectrograms = spectrograms.to(self.device)
@@ -90,7 +90,7 @@ class Trainer:
                 print("Best Model. Saving ...")
                 save_model(
                     self.model,
-                    self.train_config,
+                    self.train_config._asdict(),
                     val_loss,
                     self.checkpoint_path / "checkpoint_best.pt",
                 )
@@ -99,7 +99,7 @@ class Trainer:
                 print("Early stopping triggered. Stopping training.")
                 save_model(
                     self.model,
-                    self.train_config,
+                    self.train_config._asdict(),
                     val_loss,
                     self.checkpoint_path / "checkpoint_final.pt",
                 )
@@ -107,7 +107,7 @@ class Trainer:
 
         save_model(
             self.model,
-            self.train_config,
+            self.train_config._asdict(),
             val_loss,
             self.checkpoint_path / "checkpoint_final.pt",
         )

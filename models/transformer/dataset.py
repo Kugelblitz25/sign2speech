@@ -11,7 +11,7 @@ class SpectrogramDataset(Dataset):
         self.features = self.features_df[feature_cols].values
 
         self.specs_df = pd.read_csv(spectrograms_csv)
-        specs = self.specs_df.drop("Gloss", axis=1).values
+        specs = self.specs_df.drop("word", axis=1).values
         self.spectrograms = {
             word: spec.reshape(-1, 80, 88)
             for word, spec in zip(self.specs_df["word"], specs)
