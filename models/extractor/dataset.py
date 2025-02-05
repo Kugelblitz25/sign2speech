@@ -8,16 +8,10 @@ from pytorchvideo.transforms import (
     ApplyTransformToKey,
     ShortSideScale,
     UniformTemporalSubsample,
+    UniformCropVideo,
 )
 from torch.utils.data import Dataset
 from torchvision.transforms import Compose, Lambda
-from torchvision.transforms._transforms_video import (
-    CenterCropVideo,
-)
-
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
 
 
 # Model specific
@@ -40,7 +34,7 @@ transform = ApplyTransformToKey(
             Lambda(lambda x: (x / 255.0) * 2 - 1),
             # NormalizeVideo(mean, std),
             ShortSideScale(size=side_size),
-            CenterCropVideo(crop_size=(crop_size, crop_size)),
+            UniformCropVideo(size=(crop_size, crop_size)),
         ]
     ),
 )

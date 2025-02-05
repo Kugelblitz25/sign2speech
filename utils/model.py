@@ -1,3 +1,5 @@
+import logging
+
 import torch
 from pathlib import Path
 
@@ -17,7 +19,9 @@ class EarlyStopping:
         elif val_loss > self.best_loss - self.delta:
             self.counter += 1
             if self.verbose:
-                print(f"EarlyStopping counter: {self.counter} out of {self.patience}")
+                logging.warning(
+                    f"EarlyStopping counter: {self.counter} out of {self.patience}"
+                )
             if self.counter >= self.patience:
                 self.early_stop = True
         else:
@@ -36,7 +40,7 @@ def save_model(model, config: dict, loss: float, path: str):
 
 
 def load_model_weights(model, path: str, device: torch.device):
-    print(f"Weights Loaded from {path}")
+    logging.info(f"Weights Loaded from {path}")
     weights = torch.load(path, weights_only=True, map_location=device)[
         "model_state_dict"
     ]

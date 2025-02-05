@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
 from models.extractor.model import ModifiedI3D, ModifiedR2P1D, ModifiedX3D
-from utils.config import Config
+from utils.common import Config, get_logger
 from utils.model import EarlyStopping, create_path, save_model
 
 models = {
@@ -17,6 +17,8 @@ models = {
     "x3d": ModifiedX3D,
     "r2p1d": ModifiedR2P1D,
 }
+
+logger = get_logger("logs/extractor_training.log")
 
 
 class Trainer:
@@ -34,12 +36,12 @@ class Trainer:
         self.train_config = train_config
         self.checkpoint_path = create_path(checkpoint_path)
 
-        print(f"Using Device: {self.device}")
+        logger.debug(f"Using Device: {self.device}")
 
         train_data = pd.read_csv(train_data_path)
         val_data = pd.read_csv(val_data_path)
 
-        print(f"Num Classes: {num_classes}")
+        logger.debug(f"Num Classes: {num_classes}")
 
         self.model = self.load_model(model_name, num_classes).to(self.device)
         self.train_loader = self.get_dataloader(train_data, video_root)
@@ -139,15 +141,15 @@ class Trainer:
         for epoch in range(self.train_config.epochs):
             train_acc, train_loss = self.train_epoch(epoch)
             val_acc, val_loss = self.validate()
-            scheduler.step(val_loss, epoch)
-            print(
+            scheduler.step(val_loss)
+            logger.info(
                 f"Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}, Train Accuracy: {train_acc:.2f}%, Val Accuracy: {val_acc:.2f}%"
             )
 
             # Check early stopping condition
             early_stopping(val_loss)
             if early_stopping.best_loss == val_loss:
-                print("Best Model. Saving ...")
+                logger.info("Best Model. Saving ...")
                 save_model(
                     self.model,
                     self.train_config._asdict(),
@@ -157,12 +159,8 @@ class Trainer:
                 best_train_acc, best_test_acc = train_acc, val_acc
 
             if early_stopping.early_stop and self.train_config.enable_earlystop:
-                print("Early stopping triggered. Stopping training.")
-                save_model(
-                    self.model,
-                    self.train_config._asdict(),
-                    val_loss,
-                    self.checkpoint_path / f"checkpoint_final_{self.model.name}.pt",
+                logger.warning(
+                    f"Early stopping triggered. Stopping training with best_loss: {early_stopping.best_loss:.4f}."
                 )
                 break
 

@@ -3,7 +3,7 @@ from collections import namedtuple
 import pandas as pd
 
 from models.extractor.train import Trainer
-from utils.config import Config
+from utils.common import Config
 
 cfg = Config("Experimenting with different freeze layers and models")
 

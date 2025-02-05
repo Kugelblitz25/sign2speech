@@ -1,6 +1,5 @@
 from collections import namedtuple
 from pathlib import Path
-from pathlib import Path
 
 import pandas as pd
 import torch
@@ -9,10 +8,11 @@ from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
 from models.extractor.model import ModifiedI3D
-from utils.config import Config
+from utils.common import Config, get_logger
 from utils.model import create_path, load_model_weights
 
 csvPaths = namedtuple("Paths", ["train", "test", "val"])
+logger = get_logger("logs/feature_generation.log")
 
 
 def extract_features(model, dataloader: DataLoader, save_path: Path):
@@ -50,7 +50,7 @@ def extract_features(model, dataloader: DataLoader, save_path: Path):
     }
     df["Gloss"] = df["Video file"].map(video_to_gloss)
     df.to_csv(save_path, index=False)
-    print(f"Features saved to {save_path}")
+    logger.info(f"Features saved to {save_path}")
 
 
 def main(
@@ -61,7 +61,7 @@ def main(
     save_path: csvPaths,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using Device: {device}")
+    logger.debug(f"Using Device: {device}")
     model = ModifiedI3D(num_words).to(device)
     model = load_model_weights(model, weights, device)
 

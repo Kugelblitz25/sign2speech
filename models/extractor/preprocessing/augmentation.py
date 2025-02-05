@@ -1,4 +1,3 @@
-import logging
 import random
 from collections import namedtuple
 from pathlib import Path
@@ -11,12 +10,10 @@ import torchvision.transforms.functional as TF
 from pytorchvideo.data.encoded_video import EncodedVideo
 from tqdm import tqdm
 
-from utils.config import Config
+from utils.common import Config, get_logger
 from utils.model import create_path
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logger = get_logger("logs/video_augmentation.log")
 csvPaths = namedtuple("Paths", ["train", "test", "val"])
 
 
@@ -101,7 +98,7 @@ def augment_dataset(
                 augmented_data.append(new_item)
 
         except Exception as e:
-            logging.error(f"Failed to augment video {video_path}: {str(e)}")
+            logger.error(f"Failed to augment video {video_path}: {str(e)}")
             continue
 
     return pd.concat(augmented_data, axis=1).T
@@ -121,7 +118,7 @@ def main(
         )
         augmented_data.to_csv(csv_path, index=False)
 
-        logging.info(f"Created {len(augmented_data)} augmented videos for {csv_path}")
+        logger.info(f"Created {len(augmented_data)} augmented videos for {csv_path}")
 
 
 # Example usage

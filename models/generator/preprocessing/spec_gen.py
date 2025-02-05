@@ -6,8 +6,10 @@ import pandas as pd
 import torch
 from speechbrain.inference.TTS import Tacotron2
 
-from utils.config import Config
+from utils.common import Config, get_logger
 from utils.model import create_path
+
+logger = get_logger("logs/spectrogram_generation.log")
 
 
 def generate_spec(word: str, model):
@@ -41,10 +43,9 @@ def process_words(n_words: int, train_data: pd.DataFrame, model):
         spectrogram = generate_spec(word, model)
         rows.append([words[count]] + spectrogram.flatten().tolist())
         if np.allclose(spectrogram, 0):
-            print(word)
             i += 1
         count += 1
-    print(f"Bad Audio: {i}/{count}")
+    logger.info(f"Bad Audio: {i}/{count}")
     data = pd.DataFrame(
         rows, columns=["word"] + [f"feature_{i}" for i in range(1, 80 * 88 + 1)]
     )

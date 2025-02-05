@@ -6,8 +6,10 @@ from tqdm import tqdm
 
 from models.transformer.dataset import SpectrogramDataset
 from models.transformer.model import SpectrogramGenerator
-from utils.config import Config
+from utils.common import Config, get_logger
 from utils.model import EarlyStopping, create_path, save_model
+
+logger = get_logger("logs/transformer_training.log")
 
 
 class Trainer:
@@ -22,7 +24,7 @@ class Trainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.train_config = train_config
         self.checkpoint_path = create_path(checkpoint_path)
-        print(f"Using Device: {self.device}")
+        logger.debug(f"Using Device: {self.device}")
 
         self.model = SpectrogramGenerator().to(self.device)
         self.train_loader = self.get_dataloader(train_data_path, specs_csv)
@@ -75,19 +77,33 @@ class Trainer:
 
     def train(self):
         self.criterion = nn.MSELoss()
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.train_config.lr)
+        self.optimizer = optim.Adam(
+            self.model.parameters(),
+            lr=self.train_config.lr,
+            weight_decay=self.train_config.weight_decay,
+        )
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer,
+            mode="min",
+            factor=self.train_config.scheduler_factor,
+            patience=self.train_config.scheduler_factor,
+        )
         early_stopping = EarlyStopping(
             patience=self.train_config.patience, verbose=True
         )
 
+        logger.critical("Started transformer training.")
         for epoch in range(self.train_config.epochs):
             train_loss = self.train_epoch(epoch)
             val_loss = self.validate()
-            print(f"Train Loss = {train_loss:.4f}, Val Loss = {val_loss:.4f}")
+            scheduler.step(val_loss)
+            logger.info(
+                f"Epoch: {epoch + 1} Train Loss = {train_loss:.4f}, Val Loss = {val_loss:.4f}"
+            )
 
             early_stopping(val_loss)
             if early_stopping.best_loss == val_loss:
-                print("Best Model. Saving ...")
+                logger.info("Best Model. Saving ...")
                 save_model(
                     self.model,
                     self.train_config._asdict(),
@@ -96,15 +112,12 @@ class Trainer:
                 )
 
             if early_stopping.early_stop and self.train_config.enable_earlystop:
-                print("Early stopping triggered. Stopping training.")
-                save_model(
-                    self.model,
-                    self.train_config._asdict(),
-                    val_loss,
-                    self.checkpoint_path / "checkpoint_final.pt",
-                )
+                logger.warning("Early stopping triggered.")
                 break
 
+        logger.warning(
+            f"Stopped training with best_loss: {early_stopping.best_loss:.4f}."
+        )
         save_model(
             self.model,
             self.train_config._asdict(),

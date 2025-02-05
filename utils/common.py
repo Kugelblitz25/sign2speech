@@ -1,7 +1,32 @@
+import logging
+
 import argparse
 from collections import namedtuple
 
 import yaml
+
+
+def get_logger(loc: str):
+    logger = logging.getLogger()
+    logger.handlers.clear()
+    logger.setLevel(logging.DEBUG)
+
+    file_handler = logging.FileHandler(loc)
+    file_handler.setLevel(logging.DEBUG)
+
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+
+    formatter = logging.Formatter(
+        "[%(levelname)s] %(asctime)s - %(message)s", datefmt="%d/%m/%Y %H:%M"
+    )
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+    return logger
 
 
 class Config:

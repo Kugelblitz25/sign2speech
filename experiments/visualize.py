@@ -13,7 +13,7 @@ from tqdm import tqdm
 from models.extractor.dataset import WLASLDataset
 from models.extractor.model import ModifiedI3D
 from utils.model import load_model_weights, create_path
-from utils.config import Config
+from utils.common import Config
 
 
 def plot_tsne(

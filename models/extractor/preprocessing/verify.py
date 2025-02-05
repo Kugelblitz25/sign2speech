@@ -1,4 +1,3 @@
-import logging
 from collections import namedtuple
 
 import pandas as pd
@@ -7,12 +6,10 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
-from utils.config import Config
+from utils.common import Config, get_logger
 from utils.model import create_path
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logger = get_logger("logs/video_verify.log")
 csvPaths = namedtuple("Paths", ["train", "test", "val"])
 
 
@@ -38,7 +35,7 @@ def verify_videos(
     # Report results
     total_videos = len(dataset)
     successful_videos = len(good_videos)
-    logging.info(
+    logger.info(
         f"Verification complete. {successful_videos}/{total_videos} videos loaded successfully."
     )
 

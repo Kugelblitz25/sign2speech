@@ -4,7 +4,7 @@ import gradio as gr
 import soundfile as sf
 
 from models import Sign2Speech
-from utils.config import Config
+from utils.common import Config
 
 config = Config("Generate Audio")
 
