@@ -1,9 +1,9 @@
-import json
 from collections import namedtuple
+from pathlib import Path
+from pathlib import Path
 
 import pandas as pd
 import torch
-from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -15,12 +15,8 @@ from utils.model import create_path, load_model_weights
 csvPaths = namedtuple("Paths", ["train", "test", "val"])
 
 
-def extract_features(
-    model, dataloader: DataLoader, save_path_train: str, save_path_test: str
-):
+def extract_features(model, dataloader: DataLoader, save_path: Path):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    save_path_train = create_path(save_path_train)
-    save_path_test = create_path(save_path_test)
     all_features = []
     all_video_ids = []
 
@@ -31,32 +27,30 @@ def extract_features(
         ):
             inputs, labels = inputs.to(device), labels.to(device)
             features, _ = model(inputs)
-            features = features.cpu().numpy()
+            features = (
+                features.flatten().cpu().numpy().reshape(dataloader.batch_size, -1)
+            )
 
             # Get video IDs for this batch
             start_idx = batch_idx * dataloader.batch_size
-            end_idx = start_idx + inputs.size(0)
-            batch_video_ids = [
-                dataloader.dataset.data[i]["video_id"]
-                for i in range(start_idx, min(end_idx, len(dataloader.dataset)))
-            ]
+            end_idx = min(start_idx + dataloader.batch_size, len(dataloader.dataset))
+            batch_video_ids = dataloader.dataset.data.loc[
+                start_idx : end_idx - 1, "Video file"
+            ].to_list()
 
-            # Store features and metadata
             all_features.extend(features)
             all_video_ids.extend(batch_video_ids)
 
-    feature_cols = [f"feature_{i}" for i in range(features.shape[1])]
+    feature_cols = [f"feature_{i}" for i in range(len(all_features[0]))]
     df = pd.DataFrame(all_features, columns=feature_cols)
-    df["video_id"] = all_video_ids
-    video_to_gloss = {
-        item["video_id"]: item["gloss"] for item in dataloader.dataset.data
+    df["Video file"] = all_video_ids
+    data = dataloader.dataset.data
+    video_to_gloss: dict[str, str] = {
+        data.iloc[i]["Video file"]: data.iloc[i]["Gloss"] for i in range(len(data))
     }
-    df["gloss"] = df["video_id"].map(video_to_gloss)
-
-    xtrain, xval = train_test_split(df, test_size=0.2)
-    xtrain.to_csv(save_path_train, index=False)
-    xval.to_csv(save_path_test, index=False)
-    print(f"Features saved to {save_path_train} and {save_path_test}")
+    df["Gloss"] = df["Video file"].map(video_to_gloss)
+    df.to_csv(save_path, index=False)
+    print(f"Features saved to {save_path}")
 
 
 def main(
@@ -68,18 +62,16 @@ def main(
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using Device: {device}")
-
-    with open(data_path) as f:
-        data = json.load(f)
-
-    dataset = WLASLDataset(data, video_root)
-    dataloader = DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4)
-
     model = ModifiedI3D(num_words).to(device)
     model = load_model_weights(model, weights, device)
-    print(f"Num Classes: {num_words}")
 
-    extract_features(model, dataloader, save_path_train, save_path_test)
+    for split in ["train", "test", "val"]:
+        csv_path = getattr(data_path, split)
+        data = pd.read_csv(csv_path)
+        dataset = WLASLDataset(data, video_root)
+        dataloader = DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4)
+        output_path = create_path(getattr(save_path, split))
+        extract_features(model, dataloader, output_path)
 
 
 if __name__ == "__main__":

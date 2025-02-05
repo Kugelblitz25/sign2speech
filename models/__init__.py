@@ -41,7 +41,7 @@ class Sign2Speech:
                     )
             audio_concat = np.concatenate([audio_concat, audio])
         return audio_concat
-    
+
     def get_frames(self, path: str) -> np.ndarray:
         frame_list = []
         cap = cv2.VideoCapture(path)
@@ -58,7 +58,7 @@ class Sign2Speech:
             predictions = self.nms(self.get_frames(frames))
         else:
             predictions = self.nms(frames)
-            
+
         for frame_idx in predictions:
             spec = self.transformer(predictions[frame_idx])
             audio, _ = self.generator(spec)

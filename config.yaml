@@ -15,8 +15,10 @@ data:
       val: data/asl-citizen/processed/val_10.csv
     classlist: data/asl-citizen/processed/classes.txt # words used
     specs: data/asl-citizen/processed/specs.csv # spectograms
-    vid_features_train: data/asl-citizen/processed/features_train.csv # features generated using extractor
-    vid_features_test: data/asl-citizen/processed/features_test.csv # features generated using extractor
+    vid_features: # features generated using extractor
+      train: data/asl-citizen/processed/features_train.csv # features generated using extractor
+      test: data/asl-citizen/processed/features_test.csv
+      val: data/asl-citizen/processed/features_val.csv
 
 extractor:
   num_augmentations: 10

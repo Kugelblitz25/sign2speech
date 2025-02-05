@@ -117,8 +117,8 @@ if __name__ == "__main__":
     config = Config("Transforming video features into spectrogram features")
 
     trainer = Trainer(
-        config.data.processed.vid_features_train,
-        config.data.processed.vid_features_test,
+        config.data.processed.vid_features.train,
+        config.data.processed.vid_features.val,
         config.data.processed.specs,
         config.transformer.training,
         config.transformer.checkpoints,

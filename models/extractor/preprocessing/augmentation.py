@@ -17,6 +17,7 @@ from utils.model import create_path
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+csvPaths = namedtuple("Paths", ["train", "test", "val"])
 
 
 def apply_augmentation(frames: list[np.ndarray]) -> list[np.ndarray]:
@@ -44,7 +45,6 @@ def apply_augmentation(frames: list[np.ndarray]) -> list[np.ndarray]:
         frame_aug = TF.adjust_contrast(frame_aug, contrast_factor)
         frame_aug = TF.adjust_hue(frame_aug, hue_factor)
         frame_aug = TF.adjust_saturation(frame_aug, saturation_factor)
-        frame_aug = TF.to_tensor(frame_aug)
         augmented_frames.append(frame_aug)
 
     return augmented_frames
@@ -66,7 +66,7 @@ def save_video(frames, output_path, fps=25):
 
 
 def augment_dataset(
-    data: pd.DataFrame, video_root: str, output_dir: str, num_augmentations: int = 3
+    data: pd.DataFrame, video_root: Path, output_dir: Path, num_augmentations: int = 3
 ) -> pd.DataFrame:
     augmented_data = []
 
@@ -108,7 +108,7 @@ def augment_dataset(
 
 
 def main(
-    csvs_path: namedtuple,
+    csvs_path: csvPaths,
     video_root: str,
     output_video_dir: Path,
     num_augmentations: int,

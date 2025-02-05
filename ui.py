@@ -1,6 +1,5 @@
 import tempfile
 
-import cv2
 import gradio as gr
 import soundfile as sf
 

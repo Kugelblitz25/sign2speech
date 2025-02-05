@@ -1,4 +1,5 @@
 from collections import Counter
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -44,17 +45,22 @@ def process_words(n_words: int, train_data: pd.DataFrame, model):
             i += 1
         count += 1
     print(f"Bad Audio: {i}/{count}")
-    data = pd.DataFrame(rows)
-    data.rename(columns={data.columns[0]: "word"}, inplace=True)
+    data = pd.DataFrame(
+        rows, columns=["word"] + [f"feature_{i}" for i in range(1, 80 * 88 + 1)]
+    )
 
     return data
 
 
 def main(
-    train_data_path: str, specs_path: str, classlist_path: str, n_words: int, model
+    train_data_path: str,
+    specs_path: Path,
+    classlist_path: Path,
+    n_words: int,
+    model: Tacotron2 | None,
 ):
-    specs_path = create_path(specs_path)
-    classlist_path = create_path(classlist_path)
+    if model is None:
+        raise ValueError("Unable to load model.")
 
     train_data = pd.read_csv(train_data_path)
     data = process_words(n_words, train_data, model)
@@ -77,10 +83,13 @@ if __name__ == "__main__":
         run_opts={"device": device},
     )
 
+    specs_path = create_path(config.data.processed.specs)
+    classlist_path = create_path(config.data.processed.classlist)
+
     main(
         config.data.raw.csvs.train,
-        config.data.processed.specs,
-        config.data.processed.classlist,
+        specs_path,
+        classlist_path,
         config.n_words,
         tacotron2,
     )

@@ -13,6 +13,7 @@ from utils.model import create_path
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+csvPaths = namedtuple("Paths", ["train", "test", "val"])
 
 
 def verify_videos(
@@ -45,10 +46,10 @@ def verify_videos(
 
 
 def main(
-    csvs_path: namedtuple,
+    csvs_path: csvPaths,
     classlist_path: str,
     video_root: str,
-    verified_csvs_path: namedtuple,
+    verified_csvs_path: csvPaths,
 ):
     with open(classlist_path) as f:
         classes = set([word.strip() for word in f.readlines()])

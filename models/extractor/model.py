@@ -37,9 +37,9 @@ class ModifiedI3D(nn.Module):
         conv = self.backbone(x)
         features = self.features(conv)
 
-        features = self.dropout(features).permute(0, 2, 3, 4, 1)
-        output = self.classifier(features).permute(0, 4, 1, 2, 3)
-        return features, self.flatten(output)
+        features = self.dropout(features)
+        output = self.classifier(features.permute(0, 2, 3, 4, 1)).permute(0, 4, 1, 2, 3)
+        return self.flatten(features), self.flatten(output)
 
 
 class ModifiedX3D(nn.Module):

@@ -17,8 +17,8 @@ from utils.config import Config
 
 
 def plot_tsne(
-    train_features: list[np.array],
-    test_features: list[np.array],
+    train_features: list[np.ndarray],
+    test_features: list[np.ndarray],
     train_labels: list[str],
     test_labels: list[str],
     save_path: Path,
@@ -101,8 +101,8 @@ def plot_confusion_matrix(
         annot=True,
         fmt=".1f",
         cmap="plasma",
-        yticklabels=np.unique(true_labels),
-        xticklabels=np.unique(true_labels),
+        yticklabels=set(true_labels),
+        xticklabels=set(true_labels),
     )
     plt.title("Confusion Matrix")
     plt.xlabel("Predicted")
