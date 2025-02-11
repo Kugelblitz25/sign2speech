@@ -21,7 +21,7 @@ data:
       val: data/asl-citizen/processed/features_val.csv
 
 extractor:
-  num_augmentations: 10
+  num_augmentations: 2
   checkpoints: models/extractor/checkpoints
   model: i3d
   training:

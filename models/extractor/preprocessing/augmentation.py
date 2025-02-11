@@ -3,11 +3,16 @@ from collections import namedtuple
 from pathlib import Path
 
 import cv2
-import numpy as np
 import pandas as pd
 import torch
 import torchvision.transforms.functional as TF
 from pytorchvideo.data.encoded_video import EncodedVideo
+from pytorchvideo.transforms import ShortSideScale, Permute
+from torchvision.transforms import Compose, ColorJitter, Lambda
+from torchvision.transforms._transforms_video import (
+    CenterCropVideo,
+)
+
 from tqdm import tqdm
 
 from utils.common import Config, get_logger
@@ -17,45 +22,39 @@ logger = get_logger("logs/video_augmentation.log")
 csvPaths = namedtuple("Paths", ["train", "test", "val"])
 
 
-def apply_augmentation(frames: list[np.ndarray]) -> list[np.ndarray]:
-    augmented_frames = []
-
-    # Random augmentation parameters (consistent across frames)
-    brightness_factor = random.uniform(0.6, 1.6)
-    contrast_factor = random.uniform(0.6, 1.6)
-    hue_factor = random.uniform(-0.2, 0.2)
-    saturation_factor = random.uniform(0.6, 1.6)
+def apply_augmentation(frames: torch.Tensor) -> torch.Tensor:
+    side_size = 256
+    crop_size = 256
+    transform = Compose(
+        [
+            ShortSideScale(size=side_size),
+            CenterCropVideo(crop_size=(crop_size, crop_size)),
+            Permute((1, 0, 2, 3)),
+            Lambda(lambda x: (x / 255.0)),
+            ColorJitter(brightness=0.6, contrast=0.6, hue=0.2, saturation=0.6),
+            Lambda(lambda x: (x * 255.0)),
+        ]
+    )
     rotation_angle = random.uniform(-15, 15)
+    tot_frames = int(frames.shape[1])
+    temporal_mask = torch.ones(tot_frames, dtype=torch.bool)
+    num_frames_to_drop = random.randint(0, tot_frames // 8)
+    drop_indices = random.sample(range(tot_frames), num_frames_to_drop)
+    temporal_mask[drop_indices] = False
 
-    # Random temporal sampling (speed variation)
-    temporal_mask = torch.ones(len(frames))
-    num_frames_to_drop = random.randint(0, len(frames) // 8)
-    drop_indices = random.sample(range(len(frames)), num_frames_to_drop)
-    temporal_mask[drop_indices] = 0
-
-    for i, frame in enumerate(frames):
-        if temporal_mask[i] == 0:
-            continue
-        frame_pil = TF.to_pil_image(frame)
-        frame_aug = TF.rotate(frame_pil, rotation_angle)
-        frame_aug = TF.adjust_brightness(frame_aug, brightness_factor)
-        frame_aug = TF.adjust_contrast(frame_aug, contrast_factor)
-        frame_aug = TF.adjust_hue(frame_aug, hue_factor)
-        frame_aug = TF.adjust_saturation(frame_aug, saturation_factor)
-        augmented_frames.append(frame_aug)
-
-    return augmented_frames
+    frames_aug = transform(frames)
+    frames_aug = frames_aug[temporal_mask, :, :, :]
+    frames_aug = TF.rotate(frames_aug, rotation_angle)
+    return frames_aug
 
 
 def save_video(frames, output_path, fps=25):
-    height, width = frames[0].shape[1], frames[0].shape[2]
+    height, width = frames.shape[2], frames.shape[3]
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
     for frame_tensor in frames:
-        frame_np = (
-            (255 - frame_tensor * 255).byte().permute(1, 2, 0).numpy().astype("uint8")
-        )
+        frame_np = (frame_tensor).permute(1, 2, 0).cpu().numpy().astype("uint8")
         frame_bgr = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
         out.write(frame_bgr)
 
@@ -63,9 +62,10 @@ def save_video(frames, output_path, fps=25):
 
 
 def augment_dataset(
-    data: pd.DataFrame, video_root: Path, output_dir: Path, num_augmentations: int = 3
+    data: pd.DataFrame, video_root: Path, output_dir: Path,  num_augmentations: int = 3,
 ) -> pd.DataFrame:
     augmented_data = []
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     for row in tqdm(range(len(data)), desc="Augmenting videos"):
         item = data.iloc[row]
@@ -78,18 +78,18 @@ def augment_dataset(
             video_frames = video_data["video"]
 
             # Process original frames
-            processed_frames = []
+            # processed_frames = []
             # x1, y1, x2, y2 = item["bbox"]
             # w, h = video_frames.shape[2], video_frames.shape[3]
             # x1, x2 = max(0, x1 - 50), min(h, x2 + 50)
             # y1, y2 = max(0, y1 - 50), min(w, y2 + 50)
-            for i in range(video_frames.shape[1]):
-                frame = video_frames[:, i, :, :]  # y1:y2, x1:x2]
-                processed_frames.append(frame)
+            # for i in range(video_frames.shape[1]):
+            #     frame = video_frames[:, i, :, :]  # y1:y2, x1:x2]
+            #     processed_frames.append(frame)
 
             # Generate augmented versions
             for i in range(num_augmentations):
-                augmented_frames = apply_augmentation(processed_frames)
+                augmented_frames = apply_augmentation(video_frames.to(device))
                 video_file = item["Video file"]
                 new_video_path = output_dir / f"{i}_{video_file}"
                 save_video(augmented_frames, new_video_path)
