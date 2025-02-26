@@ -15,7 +15,6 @@ from torchvision.transforms._transforms_video import (
     CenterCropVideo,
 )
 
-
 # Model specific
 side_size = 256
 crop_size = 256

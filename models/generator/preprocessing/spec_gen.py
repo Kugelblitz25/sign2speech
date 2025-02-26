@@ -6,8 +6,8 @@ import pandas as pd
 import torch
 from speechbrain.inference.TTS import Tacotron2
 
-from utils.common import Config, get_logger
-from utils.model import create_path
+from utils.common import create_path, get_logger
+from utils.config import load_config
 
 logger = get_logger("logs/spectrogram_generation.log")
 
@@ -73,7 +73,7 @@ def main(
 
 
 if __name__ == "__main__":
-    config = Config("Generate spectrograms for words")
+    config = load_config("Generate spectrograms for words")
 
     checkpoint_path = create_path(config.generator.checkpoints)
     device = "cuda" if torch.cuda.is_available() else "cpu"

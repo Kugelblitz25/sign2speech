@@ -1,4 +1,4 @@
-from collections import namedtuple
+from dataclasses import asdict
 
 import pandas as pd
 import torch
@@ -8,15 +8,11 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
-from models.extractor.model import ModifiedI3D, ModifiedR2P1D, ModifiedX3D
-from utils.common import Config, get_logger
-from utils.model import EarlyStopping, create_path, save_model
-
-models = {
-    "i3d": ModifiedI3D,
-    "x3d": ModifiedX3D,
-    "r2p1d": ModifiedR2P1D,
-}
+from models.extractor.model import Extractor
+from utils.common import create_path, get_logger
+from utils.config import ExtractorTraining as TrainConfig
+from utils.config import load_config
+from utils.model import EarlyStopping, save_model
 
 logger = get_logger("logs/extractor_training.log")
 
@@ -27,9 +23,8 @@ class Trainer:
         train_data_path: str,
         val_data_path: str,
         video_root: str,
-        num_classes: int,
-        model_name: str,
-        train_config: namedtuple,
+        model: Extractor,
+        train_config: TrainConfig,
         checkpoint_path: str,
     ):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -41,21 +36,9 @@ class Trainer:
         train_data = pd.read_csv(train_data_path)
         val_data = pd.read_csv(val_data_path)
 
-        logger.debug(f"Num Classes: {num_classes}")
-
-        self.model = self.load_model(model_name, num_classes).to(self.device)
+        self.model = model.to(self.device)
         self.train_loader = self.get_dataloader(train_data, video_root)
         self.val_loader = self.get_dataloader(val_data, video_root)
-
-    def load_model(self, model_name, num_classes):
-        model = models.get(model_name, None)
-        if model is None:
-            raise ValueError("Invalid Model Name")
-        model = model(num_classes).to(self.device)
-        for i in range(self.train_config.freeze):
-            for param in model.backbone.blocks[i].parameters():
-                param.requires_grad = False
-        return model
 
     def get_dataloader(self, data: pd.DataFrame, video_root: str):
         dataset = WLASLDataset(data, video_root)
@@ -110,6 +93,20 @@ class Trainer:
         val_acc = 100.0 * correct_val / total_val
         return val_acc, val_loss
 
+    def save_model(self, val_loss: float, file_name: str):
+        save_model(
+            self.model,
+            asdict(self.train_config),
+            val_loss,
+            self.checkpoint_path / "full_" + file_name,
+        )
+        save_model(
+            self.model.base,
+            asdict(self.train_config),
+            val_loss,
+            self.checkpoint_path / "base_" + file_name,
+        )
+
     def train(self):
         self.criterion = nn.CrossEntropyLoss()
 
@@ -150,12 +147,7 @@ class Trainer:
             early_stopping(val_loss)
             if early_stopping.best_loss == val_loss:
                 logger.info("Best Model. Saving ...")
-                save_model(
-                    self.model,
-                    self.train_config._asdict(),
-                    val_loss,
-                    self.checkpoint_path / f"checkpoint_best_{self.model.name}.pt",
-                )
+                self.save_model(val_loss, f"best_{self.model.base.name}.pt")
                 best_train_acc, best_test_acc = train_acc, val_acc
 
             if early_stopping.early_stop and self.train_config.enable_earlystop:
@@ -164,25 +156,27 @@ class Trainer:
                 )
                 break
 
-        save_model(
-            self.model,
-            self.train_config._asdict(),
-            val_loss,
-            self.checkpoint_path / f"checkpoint_final_{self.model.name}.pt",
-        )
-
+        # Save final model
+        self.save_model(val_loss, f"final_{self.model.base.name}.pt")
         return best_train_acc, best_test_acc, train_acc, val_acc
 
 
 if __name__ == "__main__":
-    config = Config("Train and validate video classification model")
+    config = load_config("Train and validate video classification model")
+
+    logger.debug(f"Num Classes: {config.n_words}")
+
+    model = Extractor(
+        num_classes=config.n_words,
+        base_model=config.extractor.model,
+        n_freeze=config.extractor.training.freeze,
+    )
 
     trainer = Trainer(
         config.data.processed.csvs.train,
         config.data.processed.csvs.val,
         config.data.processed.videos,
-        config.n_words,
-        config.extractor.model,
+        model,
         config.extractor.training,
         config.extractor.checkpoints,
     )

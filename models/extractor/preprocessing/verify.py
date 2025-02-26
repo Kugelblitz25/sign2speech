@@ -1,4 +1,4 @@
-from collections import namedtuple
+from pathlib import Path
 
 import pandas as pd
 import torch
@@ -6,11 +6,10 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
-from utils.common import Config, get_logger
-from utils.model import create_path
+from utils.common import create_path, get_logger
+from utils.config import Splits, load_config
 
 logger = get_logger("logs/video_verify.log")
-csvPaths = namedtuple("Paths", ["train", "test", "val"])
 
 
 def verify_videos(
@@ -43,10 +42,10 @@ def verify_videos(
 
 
 def main(
-    csvs_path: csvPaths,
-    classlist_path: str,
+    csvs_path: Splits,
+    classlist_path: str | Path,
     video_root: str,
-    verified_csvs_path: csvPaths,
+    verified_csvs_path: Splits,
 ):
     with open(classlist_path) as f:
         classes = set([word.strip() for word in f.readlines()])
@@ -59,7 +58,7 @@ def main(
 
 
 if __name__ == "__main__":
-    config = Config("Process video dataset for classification")
+    config = load_config("Process video dataset for classification")
 
     main(
         config.data.raw.csvs,

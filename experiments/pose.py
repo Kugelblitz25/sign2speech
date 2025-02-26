@@ -1,18 +1,19 @@
+import os
+
 import cv2
 import mediapipe as mp
+import numpy as np
+import pandas as pd
+from pytorchvideo.data.encoded_video import EncodedVideo
 from pytorchvideo.transforms import (
     ApplyTransformToKey,
     ShortSideScale,
     UniformTemporalSubsample,
 )
-from torchvision.transforms import Compose, Lambda
+from torchvision.transforms import Compose
 from torchvision.transforms._transforms_video import (
     CenterCropVideo,
 )
-import numpy as np
-from pytorchvideo.data.encoded_video import EncodedVideo
-import pandas as pd
-import os
 
 
 def pose_features(path, clip_duration):

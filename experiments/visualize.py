@@ -11,9 +11,9 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
-from models.extractor.model import ModifiedI3D
-from utils.model import load_model_weights, create_path
-from utils.common import Config
+from models.extractor.model import Extractor
+from utils.config import load_config
+from utils.model import create_path, load_model_weights
 
 
 def plot_tsne(
@@ -161,8 +161,8 @@ def main(
     test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False, num_workers=4)
 
     num_classes = 10
-    model = ModifiedI3D(num_classes).to(device)
-    model = load_model_weights(model, weights, device)
+    model = Extractor(num_classes).to(device)
+    load_model_weights(model, weights, device)
     print(f"Num Classes: {num_classes}")
 
     save_path = create_path(output_path)
@@ -180,7 +180,7 @@ def main(
 
 
 if __name__ == "__main__":
-    config = Config("Visualization")
+    config = load_config("Visualization")
 
     main(
         config.data.processed.csvs.train,

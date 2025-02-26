@@ -4,9 +4,9 @@ import gradio as gr
 import soundfile as sf
 
 from models import Sign2Speech
-from utils.common import Config
+from utils.config import load_config
 
-config = Config("Generate Audio")
+config = load_config("Generate Audio")
 
 model = Sign2Speech(
     num_words=config.n_words,
@@ -14,8 +14,8 @@ model = Sign2Speech(
     win_size=config.nms.win_size,
     overlap=config.nms.overlap,
     threshold=config.nms.threshold,
-    extractor_checkpoint=config.pipline.extractor_checkpoint,
-    transformer_checkpoint=config.pipline.transformer_checkpoint,
+    extractor_checkpoint=config.pipeline.extractor_weights,
+    transformer_checkpoint=config.pipeline.transformer_weights,
 )
 
 

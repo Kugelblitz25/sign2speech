@@ -6,8 +6,10 @@ from tqdm import tqdm
 
 from models.transformer.dataset import SpectrogramDataset
 from models.transformer.model import SpectrogramGenerator
-from utils.common import Config, get_logger
-from utils.model import EarlyStopping, create_path, save_model
+from utils.common import create_path, get_logger
+from utils.config import TransformerTraining as TrainConfig
+from utils.config import load_config
+from utils.model import EarlyStopping, save_model
 
 logger = get_logger("logs/transformer_training.log")
 
@@ -18,7 +20,7 @@ class Trainer:
         train_data_path: str,
         val_data_path: str,
         specs_csv: str,
-        train_config: dict,
+        train_config: TrainConfig,
         checkpoint_path: str,
     ):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -127,7 +129,7 @@ class Trainer:
 
 
 if __name__ == "__main__":
-    config = Config("Transforming video features into spectrogram features")
+    config = load_config("Transforming video features into spectrogram features")
 
     trainer = Trainer(
         config.data.processed.vid_features.train,

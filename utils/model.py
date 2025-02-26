@@ -1,7 +1,9 @@
 import logging
+from pathlib import Path
 
 import torch
-from pathlib import Path
+
+from utils.common import create_path
 
 
 class EarlyStopping:
@@ -39,19 +41,9 @@ def save_model(model, config: dict, loss: float, path: str):
     torch.save(save_data, path)
 
 
-def load_model_weights(model, path: str, device: torch.device):
+def load_model_weights(model, path: str | Path, device: torch.device) -> None:
     logging.info(f"Weights Loaded from {path}")
     weights = torch.load(path, weights_only=True, map_location=device)[
         "model_state_dict"
     ]
     model.load_state_dict(weights)
-    return model
-
-
-def create_path(path_str: str):
-    path = Path(path_str)
-    if not path.suffix:
-        path.mkdir(exist_ok=True, parents=True)
-    else:
-        path.parent.mkdir(exist_ok=True, parents=True)
-    return path

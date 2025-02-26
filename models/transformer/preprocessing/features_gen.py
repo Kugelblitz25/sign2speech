@@ -1,4 +1,3 @@
-from collections import namedtuple
 from pathlib import Path
 
 import pandas as pd
@@ -7,11 +6,11 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
-from models.extractor.model import ModifiedI3D
-from utils.common import Config, get_logger
-from utils.model import create_path, load_model_weights
+from models.extractor.model import Extractor
+from utils.common import create_path, get_logger
+from utils.config import Splits, load_config
+from utils.model import load_model_weights
 
-csvPaths = namedtuple("Paths", ["train", "test", "val"])
 logger = get_logger("logs/feature_generation.log")
 
 
@@ -54,16 +53,16 @@ def extract_features(model, dataloader: DataLoader, save_path: Path):
 
 
 def main(
-    data_path: csvPaths,
+    data_path: Splits,
     num_words: int,
     video_root: str,
     weights: str,
-    save_path: csvPaths,
+    save_path: Splits,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.debug(f"Using Device: {device}")
-    model = ModifiedI3D(num_words).to(device)
-    model = load_model_weights(model, weights, device)
+    model = Extractor(num_words).to(device)
+    load_model_weights(model, weights, device)
 
     for split in ["train", "test", "val"]:
         csv_path = getattr(data_path, split)
@@ -75,7 +74,7 @@ def main(
 
 
 if __name__ == "__main__":
-    config = Config("Feature Generation for Spectrogram Generation")
+    config = load_config("Feature Generation for Spectrogram Generation")
 
     main(
         config.data.processed.csvs,

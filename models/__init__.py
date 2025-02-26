@@ -1,6 +1,6 @@
+import cv2
 import librosa
 import numpy as np
-import cv2
 
 from models.extractor import FeatureExtractor
 from models.generator import AudioGenerator

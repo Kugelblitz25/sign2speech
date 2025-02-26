@@ -1,5 +1,4 @@
 import random
-from collections import namedtuple
 from pathlib import Path
 
 import cv2
@@ -7,19 +6,17 @@ import pandas as pd
 import torch
 import torchvision.transforms.functional as TF
 from pytorchvideo.data.encoded_video import EncodedVideo
-from pytorchvideo.transforms import ShortSideScale, Permute
-from torchvision.transforms import Compose, ColorJitter, Lambda
+from pytorchvideo.transforms import Permute, ShortSideScale
+from torchvision.transforms import ColorJitter, Compose, Lambda
 from torchvision.transforms._transforms_video import (
     CenterCropVideo,
 )
-
 from tqdm import tqdm
 
-from utils.common import Config, get_logger
-from utils.model import create_path
+from utils.common import create_path, get_logger
+from utils.config import Splits, load_config
 
 logger = get_logger("logs/video_augmentation.log")
-csvPaths = namedtuple("Paths", ["train", "test", "val"])
 
 
 def apply_augmentation(frames: torch.Tensor) -> torch.Tensor:
@@ -62,7 +59,10 @@ def save_video(frames, output_path, fps=25):
 
 
 def augment_dataset(
-    data: pd.DataFrame, video_root: Path, output_dir: Path,  num_augmentations: int = 3,
+    data: pd.DataFrame,
+    video_root: Path,
+    output_dir: Path,
+    num_augmentations: int = 3,
 ) -> pd.DataFrame:
     augmented_data = []
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -105,7 +105,7 @@ def augment_dataset(
 
 
 def main(
-    csvs_path: csvPaths,
+    csvs_path: Splits,
     video_root: str,
     output_video_dir: Path,
     num_augmentations: int,
@@ -123,7 +123,7 @@ def main(
 
 # Example usage
 if __name__ == "__main__":
-    config = Config("Video Data Augmentation for Sign Language Dataset")
+    config = load_config("Video Data Augmentation for Sign Language Dataset")
 
     output_video_dir = create_path(config.data.processed.videos)
 

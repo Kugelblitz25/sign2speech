@@ -8,7 +8,7 @@ class FeatureTransformer:
     def __init__(self, weights_path: str):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = SpectrogramGenerator().to(self.device)
-        self.model = load_model_weights(self.model, weights_path)
+        load_model_weights(self.model, weights_path, self.device)
 
     def __call__(self, features):
         self.model.eval()
