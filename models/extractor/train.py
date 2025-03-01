@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from pathlib import Path
 
 import pandas as pd
 import torch
@@ -26,8 +27,8 @@ class Trainer:
         model: Extractor,
         train_config: TrainConfig,
         checkpoint_path: str,
-    ):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    ) -> None:
+        self.device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
         self.train_config = train_config
         self.checkpoint_path = create_path(checkpoint_path)
 
@@ -40,7 +41,7 @@ class Trainer:
         self.train_loader = self.get_dataloader(train_data, video_root)
         self.val_loader = self.get_dataloader(val_data, video_root)
 
-    def get_dataloader(self, data: pd.DataFrame, video_root: str):
+    def get_dataloader(self, data: pd.DataFrame, video_root: str) -> DataLoader:
         dataset = WLASLDataset(data, video_root)
         dataloader = DataLoader(
             dataset,
@@ -50,20 +51,28 @@ class Trainer:
         )
         return dataloader
 
-    def train_epoch(self, epoch: int):
+    def train_epoch(self, epoch: int) -> tuple[float, float]:
         self.model.train()
         train_loss = 0.0
         correct_train = 0
         total_train = 0
-        for inputs, labels in tqdm(
-            self.train_loader, desc=f"Epoch {epoch + 1}/{self.train_config.epochs}"
+
+        self.optimizer.zero_grad()
+        for step, (inputs, labels) in enumerate(
+            tqdm(
+                self.train_loader,
+                desc=f"Epoch {epoch + 1}/{self.train_config.epochs}",
+            ),
+            1,
         ):
             inputs, labels = inputs.to(self.device), labels.to(self.device)
-            self.optimizer.zero_grad()
             _, outputs = self.model(inputs)
             loss = self.criterion(outputs, labels)
             loss.backward()
-            self.optimizer.step()
+
+            if step % 8 == 0 or step == len(self.train_loader):
+                self.optimizer.step()
+                self.optimizer.zero_grad()
 
             train_loss += loss.item()
             _, predicted = torch.max(outputs, 1)
@@ -74,7 +83,7 @@ class Trainer:
         train_acc = 100.0 * correct_train / total_train
         return train_acc, train_loss
 
-    def validate(self):
+    def validate(self) -> tuple[float, float]:
         val_loss = 0.0
         correct_val = 0
         total_val = 0
@@ -93,21 +102,21 @@ class Trainer:
         val_acc = 100.0 * correct_val / total_val
         return val_acc, val_loss
 
-    def save_model(self, val_loss: float, file_name: str):
+    def save_model(self, val_loss: float, file_name: str | Path) -> None:
         save_model(
             self.model,
             asdict(self.train_config),
             val_loss,
-            self.checkpoint_path / "full_" + file_name,
+            self.checkpoint_path / ("full_" + str(file_name)),
         )
         save_model(
             self.model.base,
             asdict(self.train_config),
             val_loss,
-            self.checkpoint_path / "base_" + file_name,
+            self.checkpoint_path / ("base_" + str(file_name)),
         )
 
-    def train(self):
+    def train(self) -> tuple[float, float, float, float]:
         self.criterion = nn.CrossEntropyLoss()
 
         # self.optimizer = optim.Adam(

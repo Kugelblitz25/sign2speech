@@ -1,18 +1,18 @@
-n_words: 10
+n_words: 500
 
 data:
   raw:
-    videos: data/asl-citizen/raw/videos
+    videos: data/asl-citizen/raw/videos_1500
     csvs:
-      train: data/asl-citizen/raw/train_10.csv
-      test: data/asl-citizen/raw/test_10.csv
-      val: data/asl-citizen/raw/val_10.csv
+      train: data/asl-citizen/raw/train_1500.csv
+      test: data/asl-citizen/raw/test_1500.csv
+      val: data/asl-citizen/raw/val_1500.csv
   processed:
     videos: data/asl-citizen/processed/videos # preprocessed and augmented videos
     csvs:
-      train: data/asl-citizen/processed/train_10.csv
-      test: data/asl-citizen/processed/test_10.csv
-      val: data/asl-citizen/processed/val_10.csv
+      train: data/asl-citizen/processed/train_500.csv
+      test: data/asl-citizen/processed/test_500.csv
+      val: data/asl-citizen/processed/val_500.csv
     classlist: data/asl-citizen/processed/classes.txt # words used
     specs: data/asl-citizen/processed/specs.csv # spectograms
     vid_features: # features generated using extractor
@@ -21,7 +21,7 @@ data:
       val: data/asl-citizen/processed/features_val.csv
 
 extractor:
-  num_augmentations: 2
+  num_augmentations: 5
   checkpoints: models/extractor/checkpoints
   model: i3d
   training:

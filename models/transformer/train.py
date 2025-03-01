@@ -1,3 +1,5 @@
+from dataclasses import asdict
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -22,7 +24,7 @@ class Trainer:
         specs_csv: str,
         train_config: TrainConfig,
         checkpoint_path: str,
-    ):
+    ) -> None:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.train_config = train_config
         self.checkpoint_path = create_path(checkpoint_path)
@@ -32,7 +34,7 @@ class Trainer:
         self.train_loader = self.get_dataloader(train_data_path, specs_csv)
         self.val_loader = self.get_dataloader(val_data_path, specs_csv)
 
-    def get_dataloader(self, features_csv, spec_csv):
+    def get_dataloader(self, features_csv: str, spec_csv: str) -> DataLoader:
         dataset = SpectrogramDataset(features_csv, spec_csv)
         dataloader = DataLoader(
             dataset,
@@ -42,7 +44,7 @@ class Trainer:
         )
         return dataloader
 
-    def train_epoch(self, epoch):
+    def train_epoch(self, epoch: int) -> float:
         self.model.train()
         total_loss = 0
 
@@ -62,7 +64,7 @@ class Trainer:
 
         return total_loss / len(self.train_loader)
 
-    def validate(self):
+    def validate(self) -> float:
         self.model.eval()
         total_loss = 0
 
@@ -77,7 +79,7 @@ class Trainer:
 
         return total_loss / len(self.val_loader)
 
-    def train(self):
+    def train(self) -> None:
         self.criterion = nn.MSELoss()
         self.optimizer = optim.Adam(
             self.model.parameters(),
@@ -108,7 +110,7 @@ class Trainer:
                 logger.info("Best Model. Saving ...")
                 save_model(
                     self.model,
-                    self.train_config._asdict(),
+                    asdict(self.train_config),
                     val_loss,
                     self.checkpoint_path / "checkpoint_best.pt",
                 )
@@ -122,7 +124,7 @@ class Trainer:
         )
         save_model(
             self.model,
-            self.train_config._asdict(),
+            asdict(self.train_config),
             val_loss,
             self.checkpoint_path / "checkpoint_final.pt",
         )

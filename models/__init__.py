@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import cv2
 import librosa
 import numpy as np
@@ -18,14 +20,14 @@ class Sign2Speech:
         threshold: float,
         extractor_checkpoint: str,
         transformer_checkpoint: str,
-    ):
+    ) -> None:
         self.extractor = FeatureExtractor(extractor_checkpoint, num_words)
         self.transformer = FeatureTransformer(transformer_checkpoint)
         self.generator = AudioGenerator()
         self.fps = 30
         self.nms = NMS(self.extractor, hop_length, win_size, overlap, threshold)
 
-    def combine_audio(self, audios):
+    def combine_audio(self, audios: list[tuple[int, np.ndarray]]) -> np.ndarray:
         audio_concat = np.zeros(int((audios[0][0] / self.fps + 1) * self.generator.sr))
         for idx, (frame_idx, audio) in enumerate(audios[:-1]):
             video_dur = (audios[idx + 1][0] - frame_idx) / self.fps
@@ -42,7 +44,7 @@ class Sign2Speech:
             audio_concat = np.concatenate([audio_concat, audio])
         return audio_concat
 
-    def get_frames(self, path: str) -> np.ndarray:
+    def get_frames(self, path: str | Path) -> list[np.ndarray]:
         frame_list = []
         cap = cv2.VideoCapture(path)
         while cap.isOpened():
@@ -53,17 +55,17 @@ class Sign2Speech:
         cap.release()
         return frame_list
 
-    def __call__(self, frames: list[np.ndarray] | str):
-        if isinstance(frames, str):
-            predictions = self.nms(self.get_frames(frames))
-        else:
-            predictions = self.nms(frames)
+    def __call__(self, frames: list[np.ndarray] | str | Path) -> np.ndarray:
+        if not isinstance(frames, list):
+            frames = self.get_frames(frames)
+
+        predictions = self.nms(frames)
 
         for frame_idx in predictions:
             spec = self.transformer(predictions[frame_idx])
             audio, _ = self.generator(spec)
             predictions[frame_idx] = audio
-        audios = [[key, val] for key, val in predictions.items()]
-        audios = sorted(audios, key=lambda x: x[0])
-        audios.append([len(frames), -1])
+        audios = [(key, val) for key, val in predictions.items()]
+        audios = sorted(audios)
+        audios.append((len(frames), -1))
         return self.combine_audio(audios)

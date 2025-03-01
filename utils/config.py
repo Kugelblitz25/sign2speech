@@ -112,7 +112,7 @@ def load_config(desc: str) -> Config:
     )
     args = parser.parse_args()
 
-    with open(args.config_path, "r") as f:
+    with open(args.config_file, "r") as f:
         config_dict = yaml.safe_load(f)
 
     # Create nested objects

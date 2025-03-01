@@ -12,7 +12,7 @@ from utils.config import load_config
 logger = get_logger("logs/spectrogram_generation.log")
 
 
-def generate_spec(word: str, model):
+def generate_spec(word: str, model: Tacotron2) -> np.ndarray:
     mel_output, *_ = model.encode_text(word)
     if mel_output.shape[2] > 88:
         return torch.zeros(80, 88)
@@ -30,7 +30,9 @@ def generate_spec(word: str, model):
     return padded_mel_output.cpu().detach().numpy()
 
 
-def process_words(n_words: int, train_data: pd.DataFrame, model):
+def process_words(
+    n_words: int, train_data: pd.DataFrame, model: Tacotron2
+) -> pd.DataFrame:
     rows = []
 
     freq = dict(Counter(train_data.Gloss.to_list()))
@@ -59,7 +61,7 @@ def main(
     classlist_path: Path,
     n_words: int,
     model: Tacotron2 | None,
-):
+) -> None:
     if model is None:
         raise ValueError("Unable to load model.")
 
@@ -76,7 +78,7 @@ if __name__ == "__main__":
     config = load_config("Generate spectrograms for words")
 
     checkpoint_path = create_path(config.generator.checkpoints)
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = "cuda:1" if torch.cuda.is_available() else "cpu"
 
     tacotron2 = Tacotron2.from_hparams(
         source="speechbrain/tts-tacotron2-ljspeech",

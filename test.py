@@ -19,7 +19,7 @@ model = Sign2Speech(
 )
 
 
-def predict(file):
+def predict(file: str | Path) -> None:
     filename = Path(file).stem
     audio = model(file)
     sf.write(f"outputs/{filename}.wav", audio, 22050)

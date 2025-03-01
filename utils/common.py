@@ -2,12 +2,12 @@ import logging
 from pathlib import Path
 
 
-def get_logger(loc: str):
+def get_logger(loc: str) -> logging.Logger:
     logger = logging.getLogger()
     logger.handlers.clear()
     logger.setLevel(logging.DEBUG)
 
-    file_handler = logging.FileHandler(loc)
+    file_handler = logging.FileHandler(create_path(loc))
     file_handler.setLevel(logging.DEBUG)
 
     console_handler = logging.StreamHandler()
@@ -25,7 +25,7 @@ def get_logger(loc: str):
     return logger
 
 
-def create_path(path_str: str):
+def create_path(path_str: str | Path) -> Path:
     path = Path(path_str)
     if not path.suffix:
         path.mkdir(exist_ok=True, parents=True)

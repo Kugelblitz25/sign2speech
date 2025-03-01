@@ -45,7 +45,7 @@ def apply_augmentation(frames: torch.Tensor) -> torch.Tensor:
     return frames_aug
 
 
-def save_video(frames, output_path, fps=25):
+def save_video(frames: torch.Tensor, output_path: str | Path, fps: int = 25) -> None:
     height, width = frames.shape[2], frames.shape[3]
     fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
@@ -109,7 +109,7 @@ def main(
     video_root: str,
     output_video_dir: Path,
     num_augmentations: int,
-):
+) -> None:
     for split in ["train", "test", "val"]:
         csv_path = getattr(csvs_path, split)
         data = pd.read_csv(csv_path)

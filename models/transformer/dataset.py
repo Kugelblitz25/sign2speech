@@ -1,10 +1,11 @@
+import numpy as np
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
 
 
 class SpectrogramDataset(Dataset):
-    def __init__(self, features_csv: str, spectrograms_csv: str):
+    def __init__(self, features_csv: str, spectrograms_csv: str) -> None:
         self.features_df = pd.read_csv(features_csv)
         feature_cols = [col for col in self.features_df.columns if "feature_" in col]
         self.words = self.features_df["Gloss"]
@@ -17,10 +18,10 @@ class SpectrogramDataset(Dataset):
             for word, spec in zip(self.specs_df["word"], specs)
         }
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.features)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> tuple[np.ndarray, np.ndarray]:
         feature = torch.Tensor(self.features[idx])
         word = self.words[idx]
         spectrogram = torch.Tensor(self.spectrograms[word])

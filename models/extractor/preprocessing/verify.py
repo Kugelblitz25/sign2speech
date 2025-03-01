@@ -46,7 +46,7 @@ def main(
     classlist_path: str | Path,
     video_root: str,
     verified_csvs_path: Splits,
-):
+) -> None:
     with open(classlist_path) as f:
         classes = set([word.strip() for word in f.readlines()])
 

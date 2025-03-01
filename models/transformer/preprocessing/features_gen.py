@@ -14,7 +14,7 @@ from utils.model import load_model_weights
 logger = get_logger("logs/feature_generation.log")
 
 
-def extract_features(model, dataloader: DataLoader, save_path: Path):
+def extract_features(model: Extractor, dataloader: DataLoader, save_path: Path) -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     all_features = []
     all_video_ids = []
@@ -58,7 +58,7 @@ def main(
     video_root: str,
     weights: str,
     save_path: Splits,
-):
+) -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.debug(f"Using Device: {device}")
     model = Extractor(num_words).to(device)

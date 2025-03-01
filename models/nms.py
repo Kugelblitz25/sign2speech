@@ -1,3 +1,6 @@
+import numpy as np
+import torch
+
 from models.extractor import FeatureExtractor
 
 
@@ -16,14 +19,16 @@ class NMS:
         self.overlap = overlap
         self.threshold = threshold
 
-    def predict(self, frames: list):
+    def predict(
+        self, frames: list[np.ndarray]
+    ) -> dict[int, tuple[torch.tensor, float]]:
         features = {}
         for i in range(0, len(frames), self.hop_length):
             ft, conf, _ = self.extractor(frames[i : i + self.win_size])
-            features[i] = [ft, conf.cpu().numpy()[0]]
+            features[i] = (ft, conf)
         return features
 
-    def __call__(self, frames: list):
+    def __call__(self, frames: list[np.ndarray]) -> dict[int, torch.tensor]:
         features = self.predict(frames)
         frame_idxs = [
             idx for idx, (_, prob) in features.items() if prob > self.threshold

@@ -1,6 +1,7 @@
 import tempfile
 
 import gradio as gr
+import numpy as np
 import soundfile as sf
 
 from models import Sign2Speech
@@ -19,7 +20,7 @@ model = Sign2Speech(
 )
 
 
-def predict(file: str):
+def predict(file: str) -> np.ndarray:
     audio = model(file)
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_audio_file:
         sf.write(temp_audio_file.name, audio, 22050)
