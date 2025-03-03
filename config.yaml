@@ -53,12 +53,11 @@ transformer:
 generator:
   checkpoints: models/generator/checkpoints
 
-nms:
-  win_size: 50
-  hop_length: 3
-  overlap: 0
-  threshold: 0.7
-
 pipeline: # To use for complete pipeline
-  extractor_weights: models/extractor/checkpoints/checkpoint_best_i3d.pt
+  nms:
+    win_size: 50
+    hop_length: 3
+    overlap: 0
+    threshold: 0.7
+  extractor_weights: models/extractor/checkpoints/full_best_i3d.pt
   transformer_weights: models/transformer/checkpoints/checkpoint_best.pt

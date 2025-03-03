@@ -8,24 +8,20 @@ from models.extractor import FeatureExtractor
 from models.generator import AudioGenerator
 from models.nms import NMS
 from models.transformer import FeatureTransformer
+from utils.config import PipelineConfig
 
 
 class Sign2Speech:
     def __init__(
         self,
         num_words: int,
-        hop_length: int,
-        win_size: int,
-        overlap: int,
-        threshold: float,
-        extractor_checkpoint: str,
-        transformer_checkpoint: str,
+        config: PipelineConfig,
     ) -> None:
-        self.extractor = FeatureExtractor(extractor_checkpoint, num_words)
-        self.transformer = FeatureTransformer(transformer_checkpoint)
+        self.extractor = FeatureExtractor(config.extractor_weights, num_words)
+        self.transformer = FeatureTransformer(config.transformer_weights)
         self.generator = AudioGenerator()
         self.fps = 30
-        self.nms = NMS(self.extractor, hop_length, win_size, overlap, threshold)
+        self.nms = NMS(self.extractor, config.nms)
 
     def combine_audio(self, audios: list[tuple[int, np.ndarray]]) -> np.ndarray:
         audio_concat = np.zeros(int((audios[0][0] / self.fps + 1) * self.generator.sr))

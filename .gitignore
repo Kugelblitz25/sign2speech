@@ -3,4 +3,5 @@ checkpoints
 .venv
 __pycache__
 *.log
+*.pth
 uv.lock

@@ -10,12 +10,7 @@ config = load_config("Generate Audio")
 
 model = Sign2Speech(
     num_words=config.n_words,
-    hop_length=config.nms.hop_length,
-    win_size=config.nms.win_size,
-    overlap=config.nms.overlap,
-    threshold=config.nms.threshold,
-    extractor_checkpoint=config.pipeline.extractor_weights,
-    transformer_checkpoint=config.pipeline.transformer_weights,
+    config=config.pipeline,
 )
 
 

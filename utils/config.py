@@ -76,7 +76,7 @@ class Generator:
 
 
 @dataclass
-class NMS:
+class NMSConfig:
     win_size: int
     hop_length: int
     overlap: int
@@ -84,7 +84,8 @@ class NMS:
 
 
 @dataclass
-class Pipeline:
+class PipelineConfig:
+    nms: NMSConfig
     extractor_weights: str
     transformer_weights: str
 
@@ -96,8 +97,7 @@ class Config:
     extractor: Extractor
     transformer: Transformer
     generator: Generator
-    nms: NMS
-    pipeline: Pipeline
+    pipeline: PipelineConfig
 
 
 # Function to load config from YAML file
@@ -184,14 +184,15 @@ def load_config(desc: str) -> Config:
 
     generator = Generator(checkpoints=config_dict["generator"]["checkpoints"])
 
-    nms = NMS(
-        win_size=config_dict["nms"]["win_size"],
-        hop_length=config_dict["nms"]["hop_length"],
-        overlap=config_dict["nms"]["overlap"],
-        threshold=config_dict["nms"]["threshold"],
+    nms = NMSConfig(
+        win_size=config_dict["pipeline"]["nms"]["win_size"],
+        hop_length=config_dict["pipeline"]["nms"]["hop_length"],
+        overlap=config_dict["pipeline"]["nms"]["overlap"],
+        threshold=config_dict["pipeline"]["nms"]["threshold"],
     )
 
-    pipeline = Pipeline(
+    pipeline = PipelineConfig(
+        nms=nms,
         extractor_weights=config_dict["pipeline"]["extractor_weights"],
         transformer_weights=config_dict["pipeline"]["transformer_weights"],
     )
@@ -202,6 +203,5 @@ def load_config(desc: str) -> Config:
         extractor=extractor,
         transformer=transformer,
         generator=generator,
-        nms=nms,
         pipeline=pipeline,
     )

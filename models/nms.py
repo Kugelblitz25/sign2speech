@@ -2,22 +2,16 @@ import numpy as np
 import torch
 
 from models.extractor import FeatureExtractor
+from utils.config import NMSConfig
 
 
 class NMS:
-    def __init__(
-        self,
-        extractor: FeatureExtractor,
-        hop_length: int,
-        win_size: int,
-        overlap: int,
-        threshold: float,
-    ) -> None:
+    def __init__(self, extractor: FeatureExtractor, config: NMSConfig) -> None:
         self.extractor = extractor
-        self.hop_length = hop_length
-        self.win_size = win_size
-        self.overlap = overlap
-        self.threshold = threshold
+        self.hop_length = config.hop_length
+        self.win_size = config.win_size
+        self.overlap = config.overlap
+        self.threshold = config.threshold
 
     def predict(
         self, frames: list[np.ndarray]
