@@ -52,6 +52,7 @@ transformer:
 
 generator:
   checkpoints: models/generator/checkpoints
+  max_length: 88
 
 pipeline: # To use for complete pipeline
   nms:

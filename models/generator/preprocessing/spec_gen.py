@@ -12,15 +12,20 @@ from utils.config import load_config
 logger = get_logger("logs/spectrogram_generation.log")
 
 
-def generate_spec(word: str, model: Tacotron2) -> np.ndarray:
+def generate_spec(word: str, model: Tacotron2, max_length: int = -1) -> np.ndarray:
     mel_output, *_ = model.encode_text(word)
-    if mel_output.shape[2] > 88:
-        return torch.zeros(80, 88)
+
+    if max_length <= 0:
+        return mel_output.cpu().detach().numpy()
+
+    if mel_output.shape[2] > max_length:
+        return -15 * np.ones((80, max_length))
+
     padded_mel_output = torch.nn.functional.pad(
         mel_output,
         [
             0,
-            max(0, 88 - mel_output.shape[2]),
+            max(0, max_length - mel_output.shape[2]),
             0,
             max(0, 80 - mel_output.shape[1]),
         ],
@@ -31,7 +36,7 @@ def generate_spec(word: str, model: Tacotron2) -> np.ndarray:
 
 
 def process_words(
-    n_words: int, train_data: pd.DataFrame, model: Tacotron2
+    n_words: int, train_data: pd.DataFrame, model: Tacotron2, max_length: int
 ) -> pd.DataFrame:
     rows = []
 
@@ -42,7 +47,7 @@ def process_words(
     count = 0
     while count < n_words:
         word = words[count][:-1].title()
-        spectrogram = generate_spec(word, model)
+        spectrogram = generate_spec(word, model, max_length)
         rows.append([words[count]] + spectrogram.flatten().tolist())
         if np.allclose(spectrogram, 0):
             i += 1
@@ -61,12 +66,13 @@ def main(
     classlist_path: Path,
     n_words: int,
     model: Tacotron2 | None,
+    max_length: int,
 ) -> None:
     if model is None:
         raise ValueError("Unable to load model.")
 
     train_data = pd.read_csv(train_data_path)
-    data = process_words(n_words, train_data, model)
+    data = process_words(n_words, train_data, model, max_length)
     data.to_csv(specs_path, index=False)
 
     classes = data["word"].tolist()
@@ -95,4 +101,5 @@ if __name__ == "__main__":
         classlist_path,
         config.n_words,
         tacotron2,
+        config.generator.max_length,
     )

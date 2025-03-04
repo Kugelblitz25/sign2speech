@@ -1,6 +1,5 @@
 import time
 from collections import Counter
-from pathlib import Path
 
 import pandas as pd
 import torch
@@ -9,13 +8,12 @@ from models.extractor.model import Extractor
 from models.extractor.train import Trainer
 from utils.common import get_logger
 from utils.config import load_config
-from utils.model import load_model_weights
 
-logger = get_logger("logs/inc_train.log")
-config = load_config("Incremental Training")
+logger = get_logger("logs/standalone_train.log")
+config = load_config("Standalone Training")
 device = "cuda:1" if torch.cuda.is_available() else "cpu"
 
-n_words_list = [10, 50, 100, 200, 300, 400, 500]
+n_words_list = [10, 50, 100, 200, 300]
 df = pd.DataFrame(columns=["n_words", "train_acc", "val_acc"])
 
 train_data = pd.read_csv(config.data.processed.csvs.train)
@@ -41,16 +39,6 @@ for n_words in n_words_list:
         n_freeze=config.extractor.training.freeze,
     )
 
-    best_weights_path = (
-        Path(config.extractor.checkpoints) / f"base_best_{config.extractor.model}.pt"
-    )
-    if best_weights_path.exists():
-        load_model_weights(
-            model.base,
-            best_weights_path,
-            torch.device(device),
-        )
-
     trainer = Trainer(
         "experiments/incremental_training/temp_train.csv",
         "experiments/incremental_training/temp_val.csv",
@@ -65,4 +53,4 @@ for n_words in n_words_list:
     logger.info(f"Time taken: {t2 - t1:.2f}s")
     logger.info(f"Train Acc: {train_acc}, Val Acc: {val_acc}")
     df.loc[len(df)] = [n_words, train_acc, val_acc]
-    df.to_csv("experiments/incremental_training/incremental_training.csv", index=False)
+    df.to_csv("experiments/incremental_training/standalone_train.csv", index=False)
