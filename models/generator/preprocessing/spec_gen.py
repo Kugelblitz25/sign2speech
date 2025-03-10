@@ -49,7 +49,7 @@ def process_words(
         word = words[count][:-1].title()
         spectrogram = generate_spec(word, model, max_length)
         rows.append([words[count]] + spectrogram.flatten().tolist())
-        if np.allclose(spectrogram, 0):
+        if np.allclose(spectrogram, -15):
             i += 1
         count += 1
     logger.info(f"Bad Audio: {i}/{count}")

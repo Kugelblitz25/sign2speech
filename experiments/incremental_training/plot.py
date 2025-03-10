@@ -1,7 +1,7 @@
 import re
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
+from sklearn.linear_model import LinearRegression
 
 from utils.common import create_path
 
@@ -11,32 +11,27 @@ def parse_log_file(file_path):
     with open(file_path, "r") as f:
         log_content = f.read()
 
-    # Find all the experiments in the log file
     experiment_headers = re.findall(
         r"\[INFO\] \d+/\d+/\d+ \d+:\d+ - Processing (\d+) words", log_content
-    )[15:-3]
+    )#[15:-3]
 
-    # Split the log file by experiment
     experiment_blocks = re.split(
         r"\[INFO\] \d+/\d+/\d+ \d+:\d+ - Processing \d+ words", log_content
-    )[16:-3]
+    )[1:]#[16:-3]
 
     experiments = []
 
     for exp_name, block in zip(experiment_headers, experiment_blocks):
-        # Extract metrics for each epoch
         metrics = re.findall(
             r"\[INFO\] \d+/\d+/\d+ \d+:\d+ - Train Loss: ([\d\.]+), Val Loss: ([\d\.]+), Train Accuracy: ([\d\.]+)%, Val Accuracy: ([\d\.]+)%",
             block,
         )
 
-        # Final loss
         final_accs = re.findall(
             r"\[INFO\] \d+/\d+/\d+ \d+:\d+ - Train Acc: ([\d\.]+), Val Acc: ([\d\.]+)",
             block,
         )[0]
 
-        # Extract time taken
         time_taken = re.findall(
             r"\[INFO\] \d+/\d+/\d+ \d+:\d+ - Time taken: ([\d\.]+)s", block
         )
@@ -73,10 +68,8 @@ def plot_metrics(experiments, output_dir):
     output_dir = create_path(output_dir)
     max_epochs = max([exp["epochs"] for exp in experiments])
 
-    # Colors for different experiments
     colors = ["b", "r", "g", "c", "m", "y", "k"]
 
-    # Create figure for accuracy
     fig, axes = plt.subplots(1, 2, figsize=(15, 6), sharey=True)
     axes = axes.flatten()
 
@@ -115,7 +108,6 @@ def plot_metrics(experiments, output_dir):
 
     plt.savefig(output_dir / "accuracy_plot.png", dpi=300, bbox_inches="tight")
 
-    # Create figure for loss
     fig, axes = plt.subplots(1, 2, figsize=(15, 6), sharey=True)
     axes = axes.flatten()
 
@@ -156,8 +148,13 @@ def plot_metrics(experiments, output_dir):
     words = [exp["n_words"] for exp in experiments]
     time = [exp["time_taken"] / 3600 for exp in experiments]
 
+    X = np.array(words).reshape(-1, 1)
+
+    model = LinearRegression()
+    model.fit(X, time)
+
     x = np.linspace(0, 500, 50)
-    y = (160.07159 * x + 2606.14842) / 3600
+    y = model.predict(x.reshape(-1, 1))
 
     plt.figure(figsize=(10, 8))
     plt.scatter(words, time, marker="o", color="r")
@@ -167,6 +164,7 @@ def plot_metrics(experiments, output_dir):
     plt.legend(loc="lower right")
     plt.grid(True, linestyle="--", alpha=0.7)
     plt.title("Time Taken for Training", fontsize=16)
+    plt.suptitle(f"Total time taken: {sum(time):.2f} hr")
 
     plt.savefig(output_dir / "time_plot.png", dpi=300, bbox_inches="tight")
 
@@ -187,5 +185,5 @@ def plot_metrics(experiments, output_dir):
 
 
 if __name__ == "__main__":
-    experiments = parse_log_file("logs/inc_train.log")
-    plot_metrics(experiments, "experiments/incremental_training")
+    experiments = parse_log_file("logs/standalone_train.log")
+    plot_metrics(experiments, "experiments/incremental_training/std")

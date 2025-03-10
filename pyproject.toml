@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "fairseq>=0.12.2",
     "librosa>=0.10.2.post1",
     "matplotlib>=3.10.0",
     "mediapipe==0.10.9",
@@ -15,8 +16,10 @@ dependencies = [
     "seaborn>=0.13.2",
     "soundfile>=0.13.0",
     "speechbrain>=1.0.2",
+    "tensorboardx>=2.6.2.2",
     "torch>=2.5.1",
     "torchvision>=0.20.1",
+    "transformers>=4.49.0",
 ]
 
 [tool.uv.sources]
