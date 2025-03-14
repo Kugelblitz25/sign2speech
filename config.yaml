@@ -1,24 +1,24 @@
-n_words: 1500
+n_words: 100
 
 data:
   raw:
-    videos: data/asl-citizen/raw/videos_1500
+    videos: data/wlasl/raw/videos
     csvs:
-      train: data/asl-citizen/raw/train_1500.csv
-      test: data/asl-citizen/raw/test_1500.csv
-      val: data/asl-citizen/raw/val_1500.csv
+      train: data/wlasl/raw/wlasl_train_100.csv
+      test: data/wlasl/raw/wlasl_test_100.csv
+      val: data/wlasl/raw/wlasl_val_100.csv
   processed:
-    videos: data/asl-citizen/processed/videos # preprocessed and augmented videos
+    videos: data/wlasl/processed/videos # preprocessed and augmented videos
     csvs:
-      train: data/asl-citizen/processed/train_500.csv
-      test: data/asl-citizen/processed/test_500.csv
-      val: data/asl-citizen/processed/val_500.csv
-    classlist: data/asl-citizen/processed/classes.txt # words used
-    specs: data/asl-citizen/processed/specs.csv # spectograms
+      train: data/wlasl/processed/train.csv
+      test: data/wlasl/processed/test.csv
+      val: data/wlasl/processed/val.csv
+    classlist: data/wlasl/processed/classes.txt # words used
+    specs: data/wlasl/processed/specs.csv # spectograms
     vid_features: # features generated using extractor
-      train: data/asl-citizen/processed/features_train.csv # features generated using extractor
-      test: data/asl-citizen/processed/features_test.csv
-      val: data/asl-citizen/processed/features_val.csv
+      train: data/wlasl/processed/features_train.csv # features generated using extractor
+      test: data/wlasl/processed/features_test.csv
+      val: data/wlasl/processed/features_val.csv
 
 extractor:
   num_augmentations: 5

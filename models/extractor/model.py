@@ -53,4 +53,4 @@ class Extractor(nn.Module):
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         features = self.base(x)
         output = self.classifier(features).permute(0, 4, 1, 2, 3)
-        return self.flatten(features), self.flatten(output)
+        return self.flatten(features.permute(0, 4, 1, 2, 3)), self.flatten(output)

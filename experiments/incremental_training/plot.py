@@ -1,4 +1,5 @@
 import re
+
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.linear_model import LinearRegression
@@ -13,11 +14,11 @@ def parse_log_file(file_path):
 
     experiment_headers = re.findall(
         r"\[INFO\] \d+/\d+/\d+ \d+:\d+ - Processing (\d+) words", log_content
-    )#[15:-3]
+    )  # [15:-3]
 
     experiment_blocks = re.split(
         r"\[INFO\] \d+/\d+/\d+ \d+:\d+ - Processing \d+ words", log_content
-    )[1:]#[16:-3]
+    )[1:]  # [16:-3]
 
     experiments = []
 
@@ -158,7 +159,7 @@ def plot_metrics(experiments, output_dir):
 
     plt.figure(figsize=(10, 8))
     plt.scatter(words, time, marker="o", color="r")
-    plt.plot(x, y, "g--", label=f"best fit")
+    plt.plot(x, y, "g--", label="best fit")
     plt.xlabel("Number of Words")
     plt.ylabel("Time Taken(hr)")
     plt.legend(loc="lower right")

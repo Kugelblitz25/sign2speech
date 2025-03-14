@@ -1,6 +1,6 @@
+import os
 import time
 from collections import Counter
-import os
 
 import pandas as pd
 import torch
@@ -14,7 +14,7 @@ logger = get_logger("logs/standalone_train.log")
 config = load_config("Standalone Training")
 device = "cuda:1" if torch.cuda.is_available() else "cpu"
 
-n_words_list = [750, 1000] #[10, 50, 100, 200, 300, 400, 500]
+n_words_list = [750, 1000]  # [10, 50, 100, 200, 300, 400, 500]
 df_path = "experiments/incremental_training/standalone_train.csv"
 
 if os.path.exists(df_path):

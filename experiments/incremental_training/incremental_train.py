@@ -1,7 +1,7 @@
+import os
 import time
 from collections import Counter
 from pathlib import Path
-import os
 
 import pandas as pd
 import torch
