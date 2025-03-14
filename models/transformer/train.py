@@ -15,6 +15,15 @@ from utils.model import EarlyStopping, save_model
 
 logger = get_logger("logs/transformer_training.log")
 
+def spectral_convergence_loss(mel_true, mel_pred):
+    return torch.norm(mel_true - mel_pred, p="fro") / torch.norm(mel_true, p="fro")
+
+
+def combined_loss(mel_true, mel_pred, lambda_sc=0.1):
+    l1 = nn.functional.l1_loss(mel_pred, mel_true)
+    sc = spectral_convergence_loss(mel_true, mel_pred)
+    return l1 + lambda_sc * sc
+
 
 class Trainer:
     def __init__(
@@ -56,7 +65,7 @@ class Trainer:
 
             self.optimizer.zero_grad()
             outputs = self.model(features)
-            loss = self.criterion(outputs, spectrograms)
+            loss = self.criterion(spectrograms, outputs)
             loss.backward()
             self.optimizer.step()
 
@@ -74,13 +83,13 @@ class Trainer:
                 spectrograms = spectrograms.to(self.device)
 
                 outputs = self.model(features)
-                loss = self.criterion(outputs, spectrograms)
+                loss = self.criterion(spectrograms, outputs)
                 total_loss += loss.item()
 
         return total_loss / len(self.val_loader)
 
     def train(self) -> None:
-        self.criterion = nn.MSELoss()
+        self.criterion = combined_loss
         self.optimizer = optim.Adam(
             self.model.parameters(),
             lr=self.train_config.lr,

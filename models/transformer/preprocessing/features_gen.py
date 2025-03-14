@@ -26,9 +26,8 @@ def extract_features(model: Extractor, dataloader: DataLoader, save_path: Path) 
         ):
             inputs, labels = inputs.to(device), labels.to(device)
             features, _ = model(inputs)
-            features = (
-                features.flatten().cpu().numpy().reshape(dataloader.batch_size, -1)
-            )
+            n = min(len(inputs), dataloader.batch_size)
+            features = features.flatten().cpu().numpy().reshape(n, -1)
 
             # Get video IDs for this batch
             start_idx = batch_idx * dataloader.batch_size

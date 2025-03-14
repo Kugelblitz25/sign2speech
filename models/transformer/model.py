@@ -4,7 +4,7 @@ import torch.nn as nn
 
 class SpectrogramGenerator(nn.Module):
     def __init__(
-        self, input_dim: int = 2048, hidden_dims: list[int] = [1024, 512, 256, 1408]
+        self, input_dim: int = 2048, hidden_dims: list[int] = [1024, 2048, 2048]
     ) -> None:
         super(SpectrogramGenerator, self).__init__()
         mlp_layers = []
@@ -15,39 +15,47 @@ class SpectrogramGenerator(nn.Module):
                 [
                     nn.Linear(current_dim, hidden_dim),
                     nn.LayerNorm(hidden_dim),
-                    nn.ReLU(),
+                    nn.LeakyReLU(),
+                    nn.Dropout(0.1),
                 ]
             )
             current_dim = hidden_dim
 
         self.mlp = nn.Sequential(*mlp_layers)
-        self.mlp.append(nn.Linear(current_dim, 32 * 5 * 11))
+        self.mlp.append(nn.Linear(current_dim, 128 * 5 * 5))
 
-        self.deconv_layers = nn.ModuleList(
-            [
-                nn.ConvTranspose2d(32, 64, kernel_size=4, stride=2, padding=1),
-                nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1),
-                nn.ConvTranspose2d(32, 16, kernel_size=4, stride=2, padding=1),
-                nn.ConvTranspose2d(
-                    16, 1, kernel_size=(4, 3), stride=(2, 1), padding=(1, 1)
-                ),
-            ]
+        self.deconv_layers = nn.Sequential(
+            nn.ConvTranspose2d(
+                128, 128, kernel_size=4, stride=2, padding=1
+            ),  # (128, 10, 10)
+            nn.LeakyReLU(),
+            nn.InstanceNorm2d(128),
+            nn.Dropout(0.1),
+            nn.ConvTranspose2d(
+                128, 64, kernel_size=4, stride=2, padding=1
+            ),  # (64, 20, 20)
+            nn.LeakyReLU(),
+            nn.InstanceNorm2d(64),
+            nn.Dropout(0.1),
+            nn.ConvTranspose2d(
+                64, 32, kernel_size=4, stride=2, padding=1
+            ),  # (32, 40, 40)
+            nn.LeakyReLU(),
+            nn.InstanceNorm2d(32),
+            nn.Dropout(0.1),
+            nn.ConvTranspose2d(
+                32, 16, kernel_size=(7, 3), stride=(5, 1), padding=(1, 1)
+            ),  # (16, 200, 40)
+            nn.LeakyReLU(),
+            nn.InstanceNorm2d(16),
+            nn.Dropout(0.1),
+            nn.ConvTranspose2d(
+                16, 1, kernel_size=(32, 4), stride=(5, 2), padding=(1, 1)
+            ),  # (1, 1025, 80)
         )
-
-        self.batch_norms = nn.ModuleList(
-            [nn.BatchNorm2d(64), nn.BatchNorm2d(32), nn.BatchNorm2d(16)]
-        )
-
-        self.final_conv = nn.Conv2d(1, 1, kernel_size=(1, 1))
 
     def forward(self, x: torch.tensor) -> torch.tensor:
         x = self.mlp(x)
-        x = x.view(-1, 32, 5, 11)
-
-        for i, deconv in enumerate(self.deconv_layers[:-1]):
-            x = self.batch_norms[i](deconv(x))
-
-        x = self.deconv_layers[-1](x)
-        x = self.final_conv(x)
-
+        x = x.view(-1, 128, 5, 5)
+        x = self.deconv_layers(x)
         return x

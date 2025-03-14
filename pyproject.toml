@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "fairseq>=0.12.2",
+    "gtts>=2.5.4",
     "librosa>=0.10.2.post1",
     "matplotlib>=3.10.0",
     "mediapipe==0.10.9",
@@ -24,3 +25,9 @@ dependencies = [
 
 [tool.uv.sources]
 pytorchvideo = { git = "https://github.com/facebookresearch/pytorchvideo" }
+
+[dependency-groups]
+test = [
+    "pesq>=0.0.4",
+    "pystoi>=0.4.1",
+]

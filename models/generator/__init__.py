@@ -1,23 +1,13 @@
 import numpy as np
-import torch
-from speechbrain.inference.vocoders import HIFIGAN
-
-from utils.common import create_path
-from utils.config import load_config
-
-config = load_config("Generate Audio")
-checkpoint_path = create_path(config.generator.checkpoints)
+import librosa
 
 
 class AudioGenerator:
-    def __init__(self) -> None:
-        self.sr: int = 22050
-        self.model = HIFIGAN.from_hparams(
-            source="speechbrain/tts-hifigan-ljspeech",
-            savedir=checkpoint_path / "tts-hifigan-ljspeech",
-        )
+    def __init__(self, sr: int = 22050) -> None:
+        self.sr = sr
 
-    def __call__(self, spec: torch.tensor) -> tuple[np.ndarray, int]:
-        audio_signal = self.model.decode_batch(spec.squeeze(1))
-        audio_signal = audio_signal.to("cpu").cpu().numpy()[0][0]
+    def __call__(self, spec: np.ndarray) -> tuple[np.ndarray, int]:
+        """Convert a spectrogram to audio using Griffin-Lim."""
+        spec = np.nan_to_num(spec, nan=0.0, posinf=0.0, neginf=0.0)
+        audio_signal = librosa.griffinlim(spec)
         return audio_signal, self.sr
