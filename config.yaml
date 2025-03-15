@@ -42,7 +42,7 @@ transformer:
   training:
     epochs: 100
     batch_size: 64
-    lr: 1.e-03
+    lr: 1.e-02
     weight_decay: 1.e-8
     patience: 10
     scheduler_patience: 3
@@ -52,7 +52,7 @@ transformer:
 
 generator:
   checkpoints: models/generator/checkpoints
-  max_length: 80
+  max_length: 64
 
 pipeline: # To use for complete pipeline
   nms:

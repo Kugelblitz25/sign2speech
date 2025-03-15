@@ -4,7 +4,9 @@ import torch.nn as nn
 
 class SpectrogramGenerator(nn.Module):
     def __init__(
-        self, input_dim: int = 2048, hidden_dims: list[int] = [1024, 2048, 2048]
+        self, input_dim: int = 2048, 
+        spec_len: int = 80,
+        hidden_dims: list[int] = [1024, 1024, 1600]
     ) -> None:
         super(SpectrogramGenerator, self).__init__()
         mlp_layers = []
@@ -50,7 +52,7 @@ class SpectrogramGenerator(nn.Module):
             nn.InstanceNorm2d(16),
             nn.Dropout(0.1),
             nn.ConvTranspose2d(
-                16, 1, kernel_size=(32, 4), stride=(5, 2), padding=(1, 1)
+                16, 1, kernel_size=(32, spec_len - 37), stride=(5, 1), padding=(1, 1)
             ),  # (1, 1025, 80)
         )
 

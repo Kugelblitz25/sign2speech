@@ -19,10 +19,11 @@ def spectral_convergence_loss(mel_true, mel_pred):
     return torch.norm(mel_true - mel_pred, p="fro") / torch.norm(mel_true, p="fro")
 
 
-def combined_loss(mel_true, mel_pred, lambda_sc=0.1):
+def combined_loss(mel_true, mel_pred, lambda_sc=2, lambda_mse=0.1):
     l1 = nn.functional.l1_loss(mel_pred, mel_true)
+    mse = nn.functional.mse_loss(mel_pred, mel_true)
     sc = spectral_convergence_loss(mel_true, mel_pred)
-    return l1 + lambda_sc * sc
+    return l1 + lambda_mse * mse + lambda_sc * sc
 
 
 class Trainer:
@@ -31,6 +32,7 @@ class Trainer:
         train_data_path: str,
         val_data_path: str,
         specs_csv: str,
+        spec_len: int,
         train_config: TrainConfig,
         checkpoint_path: str,
     ) -> None:
@@ -39,12 +41,12 @@ class Trainer:
         self.checkpoint_path = create_path(checkpoint_path)
         logger.debug(f"Using Device: {self.device}")
 
-        self.model = SpectrogramGenerator().to(self.device)
-        self.train_loader = self.get_dataloader(train_data_path, specs_csv)
-        self.val_loader = self.get_dataloader(val_data_path, specs_csv)
+        self.model = SpectrogramGenerator(spec_len=spec_len).to(self.device)
+        self.train_loader = self.get_dataloader(train_data_path, specs_csv, spec_len)
+        self.val_loader = self.get_dataloader(val_data_path, specs_csv, spec_len)
 
-    def get_dataloader(self, features_csv: str, spec_csv: str) -> DataLoader:
-        dataset = SpectrogramDataset(features_csv, spec_csv)
+    def get_dataloader(self, features_csv: str, spec_csv: str, spec_len: int) -> DataLoader:
+        dataset = SpectrogramDataset(features_csv, spec_csv, spec_len)
         dataloader = DataLoader(
             dataset,
             batch_size=self.train_config.batch_size,
@@ -146,6 +148,7 @@ if __name__ == "__main__":
         config.data.processed.vid_features.train,
         config.data.processed.vid_features.val,
         config.data.processed.specs,
+        config.generator.max_length,
         config.transformer.training,
         config.transformer.checkpoints,
     )

@@ -5,16 +5,16 @@ from torch.utils.data import Dataset
 
 
 class SpectrogramDataset(Dataset):
-    def __init__(self, features_csv: str, spectrograms_csv: str) -> None:
+    def __init__(self, features_csv: str, spectrograms_csv: str, spec_len: int = 80) -> None:
         self.features_df = pd.read_csv(features_csv)
         feature_cols = [col for col in self.features_df.columns if "feature_" in col]
 
         self.specs_df = pd.read_csv(spectrograms_csv)
         specs = self.specs_df.drop("word", axis=1).values
         self.spectrograms = {
-            word: spec.reshape(-1, 1025, 80)
+            word: spec.reshape(-1, 88, spec_len)
             for word, spec in zip(self.specs_df["word"], specs)
-            if not np.allclose(spec, -80)
+            if not np.allclose(spec, -15)
         }
         self.features_df = self.features_df[
             self.features_df.Gloss.isin(self.spectrograms.keys())
