@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from models.transformer.dataset import SpectrogramDataset
 from models.transformer.model import SpectrogramGenerator
 from utils.common import create_path, get_logger
@@ -19,11 +19,11 @@ def spectral_convergence_loss(mel_true, mel_pred):
     return torch.norm(mel_true - mel_pred, p="fro") / torch.norm(mel_true, p="fro")
 
 
-def combined_loss(mel_true, mel_pred, lambda_sc=2, lambda_mse=0.1):
+def combined_loss(mel_true, mel_pred, lambda_sc=1, lambda_mse=0.3, lambda_l1 = 1):
     l1 = nn.functional.l1_loss(mel_pred, mel_true)
     mse = nn.functional.mse_loss(mel_pred, mel_true)
     sc = spectral_convergence_loss(mel_true, mel_pred)
-    return l1 + lambda_mse * mse + lambda_sc * sc
+    return l1*lambda_l1 + lambda_sc * sc +  lambda_mse * mse 
 
 
 class Trainer:
@@ -41,7 +41,7 @@ class Trainer:
         self.checkpoint_path = create_path(checkpoint_path)
         logger.debug(f"Using Device: {self.device}")
 
-        self.model = SpectrogramGenerator(spec_len=spec_len).to(self.device)
+        self.model = SpectrogramGenerator().to(self.device)
         self.train_loader = self.get_dataloader(train_data_path, specs_csv, spec_len)
         self.val_loader = self.get_dataloader(val_data_path, specs_csv, spec_len)
 
@@ -73,6 +73,10 @@ class Trainer:
 
             total_loss += loss.item()
 
+        self.scheduler.step()
+        current_lr = self.optimizer.param_groups[0]['lr']
+        logger.info(f"Current learning rate: {current_lr:.6f}")
+
         return total_loss / len(self.train_loader)
 
     def validate(self) -> float:
@@ -97,21 +101,22 @@ class Trainer:
             lr=self.train_config.lr,
             weight_decay=self.train_config.weight_decay,
         )
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer,
-            mode="min",
-            factor=self.train_config.scheduler_factor,
-            patience=self.train_config.scheduler_factor,
+        
+        self.scheduler = CosineAnnealingLR(
+            self.optimizer, 
+            T_max=self.train_config.epochs,
+            eta_min=self.train_config.lr * 0.01  
         )
+        
         early_stopping = EarlyStopping(
             patience=self.train_config.patience, verbose=True
         )
 
-        logger.critical("Started transformer training.")
+        logger.critical("Started transformer training with Cosine Annealing scheduler.")
         for epoch in range(self.train_config.epochs):
             train_loss = self.train_epoch(epoch)
             val_loss = self.validate()
-            scheduler.step(val_loss)
+            
             logger.info(
                 f"Epoch: {epoch + 1} Train Loss = {train_loss:.4f}, Val Loss = {val_loss:.4f}"
             )

@@ -3,7 +3,6 @@ from pathlib import Path
 
 import librosa
 import numpy as np
-import pandas as pd
 import soundfile as sf
 import torch
 from pesq import pesq
@@ -120,8 +119,6 @@ class Tester:
         self,
         generated_audio,
         target_audio,
-        generated_spec,
-        target_spec,
         sample_idx,
         metrics,
     ):
@@ -148,25 +145,6 @@ class Tester:
             f.write(f"STOI: {metrics['stoi']:.4f}\n")
             f.write(f"SNR: {metrics['snr']:.4f} dB\n")
             f.write(f"MCD: {metrics['mcd']:.4f}\n")
-
-        # Convert spectrograms into a DataFrame row format
-        # gen_row = [f"sample_{sample_idx}_generated"] + generated_spec.flatten().tolist()
-        # tgt_row = [f"sample_{sample_idx}_target"] + target_spec.flatten().tolist()
-
-        # Load existing CSV or create a new DataFrame
-        # if spec_csv_path.exists():
-        #     df = pd.read_csv(spec_csv_path)
-        # else:
-        #     df = pd.DataFrame(
-        #         columns=["id"] + [f"bin_{i}" for i in range(generated_spec.size)]
-        #     )
-
-        # # Append new data
-        # df.loc[len(df)] = gen_row
-        # df.loc[len(df)] = tgt_row
-
-        # # Save DataFrame back to CSV
-        # df.to_csv(spec_csv_path, index=False)
 
         logger.info(
             f"Saved audio and spectrogram sample {sample_idx} to {self.samples_dir}"
@@ -207,8 +185,8 @@ class Tester:
                 mse = torch.nn.functional.mse_loss(generated_specs, target_specs).item()
                 metrics["mse"].append(mse)
 
-                generated_specs_np = generated_specs.cpu().numpy()
-                target_specs_np = target_specs.cpu().numpy()
+                generated_specs_np = generated_specs
+                target_specs_np = target_specs
 
                 for i in range(generated_specs.shape[0]):
                     generated_audio, _ = self.audio_generator(
@@ -218,8 +196,8 @@ class Tester:
                        target_specs_np[i]
                     )
 
-                    generated_audio = generated_audio[0]
-                    target_audio = target_audio[0]
+                    generated_audio = generated_audio
+                    target_audio = target_audio
 
                     # Calculate metrics
                     pesq_score = calculate_pesq(
@@ -231,7 +209,7 @@ class Tester:
                         target_audio, generated_audio, sr=self.sr
                     )
                     snr_score = calculate_snr(target_audio, generated_audio)
-                    mcd_score = calculate_mcd(target_specs_np[i], generated_specs_np[i])
+                    mcd_score = calculate_mcd(target_specs_np[i].cpu().numpy(), generated_specs_np[i].cpu().numpy())
                     
 
                     metrics["pesq"].append(pesq_score)
@@ -250,8 +228,6 @@ class Tester:
                         self.save_audio_sample(
                             generated_audio,
                             target_audio,
-                            generated_specs_np[i],
-                            target_specs_np[i],
                             sample_count,
                             sample_metrics,
                         )
@@ -307,7 +283,7 @@ class Tester:
 if __name__ == "__main__":
     config = load_config("Testing spectrogram generator")
 
-    model = SpectrogramGenerator(spec_len=config.generator.max_length)
+    model = SpectrogramGenerator()
 
     load_model_weights(
         model,

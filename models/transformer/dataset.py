@@ -12,7 +12,7 @@ class SpectrogramDataset(Dataset):
         self.specs_df = pd.read_csv(spectrograms_csv)
         specs = self.specs_df.drop("word", axis=1).values
         self.spectrograms = {
-            word: spec.reshape(-1, 88, spec_len)
+            word: spec.reshape(-1, 80, spec_len)
             for word, spec in zip(self.specs_df["word"], specs)
             if not np.allclose(spec, -15)
         }
@@ -29,4 +29,5 @@ class SpectrogramDataset(Dataset):
         feature = torch.Tensor(self.features[idx])
         word = self.words[idx]
         spectrogram = torch.Tensor(self.spectrograms[word])
+        
         return feature, spectrogram
