@@ -11,7 +11,7 @@ from models.transformer.model import SpectrogramGenerator
 from utils.common import create_path, get_logger
 from utils.config import TransformerTraining as TrainConfig
 from utils.config import load_config
-from utils.model import EarlyStopping, save_model
+from utils.model import EarlyStopping, save_model, load_model_weights
 
 logger = get_logger("logs/transformer_training.log")
 
@@ -61,6 +61,7 @@ class Trainer:
         logger.debug(f"Using Device: {self.device}")
 
         self.model = SpectrogramGenerator(spec_len=spec_len).to(self.device)
+        load_model_weights(self.model, self.checkpoint_path / "checkpoint_best.pt", self.device)
         self.train_loader = self.get_dataloader(train_data_path, specs_csv, spec_len)
         self.val_loader = self.get_dataloader(val_data_path, specs_csv, spec_len)
 
@@ -116,12 +117,7 @@ class Trainer:
             lr=self.train_config.lr,
             weight_decay=self.train_config.weight_decay,
         )
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer,
-            mode="min",
-            patience=self.train_config.scheduler_patience,
-            factor=self.train_config.scheduler_factor,
-        )
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(self.optimizer, 50)
         early_stopping = EarlyStopping(
             patience=self.train_config.patience, verbose=True
         )
@@ -130,7 +126,7 @@ class Trainer:
         for epoch in range(self.train_config.epochs):
             train_loss = self.train_epoch(epoch)
             val_loss = self.validate()
-            scheduler.step(val_loss)
+            scheduler.step()
             logger.info(
                 f"Epoch: {epoch + 1} Train Loss = {train_loss:.4f}, Val Loss = {val_loss:.4f}"
             )
