@@ -18,6 +18,34 @@ logger = get_logger("logs/transformer_training.log")
 def spectral_convergence_loss(mel_true, mel_pred):
     return torch.norm(mel_true - mel_pred, p="fro") / torch.norm(mel_true, p="fro")
 
+<<<<<<< HEAD
+def complex_loss(true_complex, pred_complex, lambda_sc=0.5, lambda_mse=0.0):
+    # Extract real and imaginary parts
+    true_real, true_imag = true_complex[:, 0:1], true_complex[:, 1:2]
+    pred_real, pred_imag = pred_complex[:, 0:1], pred_complex[:, 1:2]
+    
+    # L1 loss for both components
+    l1_real = nn.functional.l1_loss(pred_real, true_real)
+    l1_imag = nn.functional.l1_loss(pred_imag, true_imag)
+    
+    # MSE loss for both components
+    mse_real = nn.functional.mse_loss(true_real, pred_real)
+    mse_imag = nn.functional.mse_loss(true_imag, pred_imag)
+    
+    # Spectral convergence for both components
+    sc_real = spectral_convergence_loss(true_real, pred_real)
+    sc_imag = spectral_convergence_loss(true_imag, pred_imag)
+    
+    # Reconstruction of magnitude
+    true_mag = torch.sqrt(true_real**2 + true_imag**2)
+    pred_mag = torch.sqrt(pred_real**2 + pred_imag**2)
+    mag_loss = nn.functional.l1_loss(pred_mag, true_mag)
+    
+    # Combined loss
+    return 2 * (l1_real + l1_imag + mag_loss) + \
+           lambda_mse * (mse_real + mse_imag) + \
+           lambda_sc * (sc_real + sc_imag) 
+=======
 
 def combined_loss(mel_true, mel_pred, lambda_sc=1, lambda_mse=0.3, lambda_l1 = 1):
     l1 = nn.functional.l1_loss(mel_pred, mel_true)
@@ -25,6 +53,7 @@ def combined_loss(mel_true, mel_pred, lambda_sc=1, lambda_mse=0.3, lambda_l1 = 1
     sc = spectral_convergence_loss(mel_true, mel_pred)
     return l1*lambda_l1 + lambda_sc * sc +  lambda_mse * mse 
 
+>>>>>>> d2f1c6add2976bfdb060ea10cec7bfb2cff4f56e
 
 class Trainer:
     def __init__(
@@ -95,24 +124,36 @@ class Trainer:
         return total_loss / len(self.val_loader)
 
     def train(self) -> None:
-        self.criterion = combined_loss
+        self.criterion = complex_loss
         self.optimizer = optim.Adam(
             self.model.parameters(),
             lr=self.train_config.lr,
             weight_decay=self.train_config.weight_decay,
         )
+<<<<<<< HEAD
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer,
+            mode="min",
+            patience=self.train_config.scheduler_patience,
+            factor=self.train_config.scheduler_factor,
+=======
         
         self.scheduler = CosineAnnealingLR(
             self.optimizer, 
             T_max=self.train_config.epochs,
             eta_min=self.train_config.lr * 0.01  
+>>>>>>> d2f1c6add2976bfdb060ea10cec7bfb2cff4f56e
         )
         
         early_stopping = EarlyStopping(
             patience=self.train_config.patience, verbose=True
         )
 
+<<<<<<< HEAD
+        logger.critical("Started transformer training with complex spectrograms.")
+=======
         logger.critical("Started transformer training with Cosine Annealing scheduler.")
+>>>>>>> d2f1c6add2976bfdb060ea10cec7bfb2cff4f56e
         for epoch in range(self.train_config.epochs):
             train_loss = self.train_epoch(epoch)
             val_loss = self.validate()

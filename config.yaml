@@ -14,7 +14,7 @@ data:
       test: data/wlasl/processed/test.csv
       val: data/wlasl/processed/val.csv
     classlist: data/wlasl/processed/classes.txt # words used
-    specs: data/wlasl/processed/specs.csv # spectograms
+    specs: data/wlasl/processed/specs_librosa.csv # spectograms
     vid_features: # features generated using extractor
       train: data/wlasl/processed/features_train.csv # features generated using extractor
       test: data/wlasl/processed/features_test.csv
@@ -40,7 +40,7 @@ transformer:
   extractor_weights: experiments/wlasl/full_best_i3d.pt # To create features before training
   checkpoints: models/transformer/checkpoints
   training:
-    epochs: 100
+    epochs: 500
     batch_size: 64
     lr: 1.e-02
     weight_decay: 1.e-8
