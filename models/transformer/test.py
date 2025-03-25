@@ -3,7 +3,6 @@ from pathlib import Path
 
 import librosa
 import numpy as np
-import pandas as pd
 import soundfile as sf
 import torch
 from pesq import pesq
@@ -173,7 +172,10 @@ class Tester:
             f.write(f"STOI: {metrics['stoi']:.4f}\n")
             f.write(f"SNR: {metrics['snr']:.4f} dB\n")
             f.write(f"MCD: {metrics['mcd']:.4f}\n")
+<<<<<<< HEAD
             f.write(f"SC: {metrics['sc']:.4f}\n")
+=======
+>>>>>>> d2f1c6add2976bfdb060ea10cec7bfb2cff4f56e
 
         logger.info(
             f"Saved audio sample {sample_idx} to {self.samples_dir}"
@@ -209,19 +211,32 @@ class Tester:
 
                 generated_specs = self.model(features)
 
+<<<<<<< HEAD
                 generated_specs_np = generated_specs.cpu().numpy()
                 target_specs_np = target_specs.cpu().numpy()
+=======
+                mse = torch.nn.functional.mse_loss(generated_specs, target_specs).item()
+                metrics["mse"].append(mse)
+
+                generated_specs_np = generated_specs
+                target_specs_np = target_specs
+>>>>>>> d2f1c6add2976bfdb060ea10cec7bfb2cff4f56e
 
                 batch_size = generated_specs.shape[0]
                 for i in range(batch_size):
                     gen_spec = generated_specs_np[i]
                     tgt_spec = target_specs_np[i]
 
+<<<<<<< HEAD
                     metrics["mse"] = np.mean(np.sqrt((gen_spec - tgt_spec)**2))
                     
                     # Convert complex spectrograms to audio
                     generated_audio, _ = self.audio_generator(gen_spec)
                     target_audio, _ = self.audio_generator(tgt_spec)
+=======
+                    generated_audio = generated_audio
+                    target_audio = target_audio
+>>>>>>> d2f1c6add2976bfdb060ea10cec7bfb2cff4f56e
 
                     # Calculate metrics
                     pesq_score = calculate_pesq(
@@ -234,8 +249,13 @@ class Tester:
                         target_audio, generated_audio, sr=self.sr
                     )
                     snr_score = calculate_snr(target_audio, generated_audio)
+<<<<<<< HEAD
                     mcd_score = calculate_mcd(target_audio, generated_audio)
                     sc_score = spectral_convergence(tgt_spec, gen_spec)
+=======
+                    mcd_score = calculate_mcd(target_specs_np[i].cpu().numpy(), generated_specs_np[i].cpu().numpy())
+                    
+>>>>>>> d2f1c6add2976bfdb060ea10cec7bfb2cff4f56e
 
                     metrics["pesq"].append(pesq_score)
                     metrics["stoi"].append(stoi_score)
@@ -314,7 +334,7 @@ class Tester:
 if __name__ == "__main__":
     config = load_config("Testing spectrogram generator")
 
-    model = SpectrogramGenerator(spec_len=config.generator.max_length)
+    model = SpectrogramGenerator()
 
     load_model_weights(
         model,
