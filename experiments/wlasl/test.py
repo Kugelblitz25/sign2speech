@@ -1,3 +1,4 @@
+from pathlib import Path
 import time
 
 import torch
@@ -31,6 +32,6 @@ tester = Tester(
 )
 
 results = tester.evaluate()
-tester.print_results(results)
+tester.print_results(results, Path("experiments/wlasl/"))
 t2 = time.perf_counter()
 logger.info(f"Time taken: {t2 - t1:.2f}s")

@@ -10,6 +10,7 @@ dependencies = [
     "librosa>=0.10.2.post1",
     "matplotlib>=3.10.0",
     "mediapipe==0.10.9",
+    "nemo>=7.0.2",
     "opencv-contrib-python>=4.11.0.86",
     "pandas>=2.2.3",
     "pytorchvideo>=0.1.5",

@@ -3,7 +3,7 @@ import torch.nn as nn
 
 class SpectrogramGenerator(nn.Module):
     def __init__(
-        self, input_dim: int = 2048, hidden_dims: list[int] = [1024, 512, 256, 1408], max_len: int = 320
+        self, input_dim: int = 2048, hidden_dims: list[int] = [1024, 512, 256, 1600], max_len: int = 320
     ) -> None:
         super(SpectrogramGenerator, self).__init__()
         self.max_len = max_len

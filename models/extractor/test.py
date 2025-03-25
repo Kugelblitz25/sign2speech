@@ -3,7 +3,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
-from sklearn.metrics import classification_report, f1_score
+from sklearn.metrics import classification_report, f1_score, confusion_matrix
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -72,6 +72,7 @@ class Tester:
         all_labels = np.array(all_labels)
         all_predictions = np.array(all_predictions)
         all_top5_predictions = np.array(all_top5_predictions)
+        class_names = sorted(self.test_data.Gloss.unique().tolist())
 
         # Calculate metrics
         results = {}
@@ -97,9 +98,21 @@ class Tester:
 
         # Detailed classification report
         class_report = classification_report(
-            all_labels, all_predictions, output_dict=True
+            all_labels, all_predictions, output_dict=True, target_names=class_names
         )
         results["classification_report"] = class_report
+
+        # Confusion Matrix
+        cm = confusion_matrix(all_labels, all_predictions)
+    
+        row_sums = cm.sum(axis=1)
+        normalized_cm = np.zeros_like(cm, dtype=float)
+        
+        for i in range(len(row_sums)):
+            if row_sums[i] > 0:  
+                normalized_cm[i] = cm[i] / row_sums[i] * 100
+
+        results["confusion_matrix"] = normalized_cm
 
         return results
 
@@ -154,6 +167,8 @@ class Tester:
         )
 
         summary_df.to_csv(output_path / "test_results_summary.csv", index=False)
+
+        np.save(output_path / "cnf.npy", results["confusion_matrix"])
         logger.info("Summary results saved to 'test_results_summary.csv'")
 
 

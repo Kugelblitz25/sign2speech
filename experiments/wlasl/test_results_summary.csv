@@ -1,0 +1,4 @@
+Metric,Value
+Top-1 Accuracy,75.62029131089905
+Top-5 Accuracy,93.1893520843797
+Weighted F1-Score,0.7450924091901754
