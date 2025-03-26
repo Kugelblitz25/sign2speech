@@ -1,24 +1,24 @@
-n_words: 100
+n_words: 10
 
 data:
   raw:
-    videos: data/wlasl/raw/videos
+    videos: data/asl-citizen/raw/videos
     csvs:
-      train: data/wlasl/raw/wlasl_train_100.csv
-      test: data/wlasl/raw/wlasl_test_100.csv
-      val: data/wlasl/raw/wlasl_val_100.csv
+      train: data/asl-citizen/raw/train_10.csv
+      test: data/asl-citizen/raw/test_10.csv
+      val: data/asl-citizen/raw/val_10.csv
   processed:
-    videos: data/wlasl/processed/videos # preprocessed and augmented videos
+    videos: data/asl-citizen/processed/videos # preprocessed and augmented videos
     csvs:
-      train: data/wlasl/processed/train.csv
-      test: data/wlasl/processed/test.csv
-      val: data/wlasl/processed/val.csv
-    classlist: data/wlasl/processed/classes.txt # words used
-    specs: data/wlasl/processed/specs_librosa.csv # spectograms
+      train: data/asl-citizen/processed/train.csv
+      test: data/asl-citizen/processed/test.csv
+      val: data/asl-citizen/processed/val.csv
+    classlist: data/asl-citizen/processed/classes.txt # words used
+    specs: data/asl-citizen/processed/specs_librosa.csv # spectograms
     vid_features: # features generated using extractor
-      train: data/wlasl/processed/features_train.csv # features generated using extractor
-      test: data/wlasl/processed/features_test.csv
-      val: data/wlasl/processed/features_val.csv
+      train: data/asl-citizen/processed/features_train.csv # features generated using extractor
+      test: data/asl-citizen/processed/features_test.csv
+      val: data/asl-citizen/processed/features_val.csv
 
 extractor:
   num_augmentations: 5
@@ -37,7 +37,7 @@ extractor:
     num_workers: 4
 
 transformer:
-  extractor_weights: experiments/wlasl/full_best_i3d.pt # To create features before training
+  extractor_weights: models/extractor/checkpoints/full_best_i3d.pt # To create features before training
   checkpoints: models/transformer/checkpoints
   training:
     epochs: 500
@@ -52,7 +52,7 @@ transformer:
 
 generator:
   checkpoints: models/generator/checkpoints
-  max_length: 320
+  max_length: 64
 
 pipeline: # To use for complete pipeline
   nms:

@@ -198,4 +198,4 @@ if __name__ == "__main__":
     )
 
     results = tester.evaluate()
-    tester.print_results(results)
+    tester.print_results(results, Path(config.extractor.checkpoints).parent)

@@ -16,7 +16,6 @@ def extract_features(model: Extractor, dataloader: DataLoader, save_path: Path) 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     all_features = []
     all_video_ids = []
-    all_glosses = []
     model.eval()
     with torch.no_grad():
         for batch_idx, (inputs, labels) in enumerate(
