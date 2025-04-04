@@ -48,7 +48,7 @@ def load_model_weights(
     model: torch.nn.Module, path: str | Path, device: torch.device
 ) -> None:
     logging.info(f"Weights Loaded from {path}")
-    weights = torch.load(path, weights_only=True, map_location=device)[
+    weights = torch.load(path, weights_only=False, map_location=device)[
         "model_state_dict"
     ]
     model.load_state_dict(weights)

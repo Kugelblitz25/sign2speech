@@ -197,7 +197,7 @@ def main(
     test_dataset = WLASLDataset(test_data, video_root, classlist)
     test_loader = DataLoader(test_dataset, batch_size=2, shuffle=False, num_workers=4)
 
-    num_classes = 500
+    num_classes = 10
     model = Extractor(num_classes).to(device)
     load_model_weights(model, weights, device)
     print(f"Num Classes: {num_classes}")
@@ -228,7 +228,7 @@ if __name__ == "__main__":
     freq = dict(Counter(train_data.Gloss.to_list()))
     words = sorted(freq, key=lambda x: freq[x])
 
-    top_n_words = words[:100]
+    top_n_words = words[:10]
     n_train = train_data[train_data.Gloss.isin(top_n_words)]
     n_val = val_data[val_data.Gloss.isin(top_n_words)]
 
@@ -240,6 +240,6 @@ if __name__ == "__main__":
         "experiments/temp_val_vis.csv",
         config.data.processed.videos,
         classlist,
-        config.pipeline.extractor_weights,
+        "experiments/combined/checkpoints/extractor_best.pt",
         "experiments",
     )

@@ -3,13 +3,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import torch
-from sklearn.metrics import classification_report, f1_score, confusion_matrix
+from sklearn.metrics import classification_report, confusion_matrix, f1_score
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
 from models.extractor.model import Extractor
-from utils.common import get_logger, create_path
+from utils.common import create_path, get_logger
 from utils.config import load_config
 from utils.model import load_model_weights
 
@@ -25,7 +25,7 @@ class Tester:
         batch_size: int = 16,
         num_workers: int = 4,
     ) -> None:
-        self.device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logger.debug(f"Using Device: {self.device}")
 
         self.model = model.to(self.device)
@@ -104,12 +104,12 @@ class Tester:
 
         # Confusion Matrix
         cm = confusion_matrix(all_labels, all_predictions)
-    
+
         row_sums = cm.sum(axis=1)
         normalized_cm = np.zeros_like(cm, dtype=float)
-        
+
         for i in range(len(row_sums)):
-            if row_sums[i] > 0:  
+            if row_sums[i] > 0:
                 normalized_cm[i] = cm[i] / row_sums[i] * 100
 
         results["confusion_matrix"] = normalized_cm
@@ -185,8 +185,8 @@ if __name__ == "__main__":
 
     load_model_weights(
         model,
-        Path(config.extractor.checkpoints) / f"full_best_{config.extractor.model}.pt",
-        torch.device("cuda:1"),
+        "experiments/combined/checkpoints/extractor_best.pt",
+        torch.device("cuda"),
     )
 
     tester = Tester(
@@ -198,4 +198,4 @@ if __name__ == "__main__":
     )
 
     results = tester.evaluate()
-    tester.print_results(results, Path(config.extractor.checkpoints).parent)
+    tester.print_results(results, create_path(Path(config.extractor.checkpoints)/"test_results"))

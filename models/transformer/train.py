@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from torch.optim.lr_scheduler import CosineAnnealingLR
+
 from models.transformer.dataset import SpectrogramDataset
 from models.transformer.model import SpectrogramGenerator
 from utils.common import create_path, get_logger
@@ -15,35 +15,40 @@ from utils.model import EarlyStopping, save_model
 
 logger = get_logger("logs/transformer_training.log")
 
+
 def spectral_convergence_loss(mel_true, mel_pred):
     return torch.norm(mel_true - mel_pred, p="fro") / torch.norm(mel_true, p="fro")
 
-def complex_loss(true_complex, pred_complex, lambda_sc=0.5, lambda_mse=0.0):
+
+def complex_loss(true_complex, pred_complex, lambda_sc=0.5, lambda_mse=0):
     # Extract real and imaginary parts
     true_real, true_imag = true_complex[:, 0:1], true_complex[:, 1:2]
     pred_real, pred_imag = pred_complex[:, 0:1], pred_complex[:, 1:2]
-    
+
     # L1 loss for both components
     l1_real = nn.functional.l1_loss(pred_real, true_real)
     l1_imag = nn.functional.l1_loss(pred_imag, true_imag)
-    
+
     # MSE loss for both components
     mse_real = nn.functional.mse_loss(true_real, pred_real)
     mse_imag = nn.functional.mse_loss(true_imag, pred_imag)
-    
+
     # Spectral convergence for both components
     sc_real = spectral_convergence_loss(true_real, pred_real)
     sc_imag = spectral_convergence_loss(true_imag, pred_imag)
-    
+
     # Reconstruction of magnitude
     true_mag = torch.sqrt(true_real**2 + true_imag**2)
     pred_mag = torch.sqrt(pred_real**2 + pred_imag**2)
     mag_loss = nn.functional.l1_loss(pred_mag, true_mag)
-    
+
     # Combined loss
-    return 2 * (l1_real + l1_imag + mag_loss) + \
-           lambda_mse * (mse_real + mse_imag) + \
-           lambda_sc * (sc_real + sc_imag) 
+    return (
+        2 * (l1_real + l1_imag + mag_loss)
+        + lambda_mse * (mse_real + mse_imag)
+        + lambda_sc * (sc_real + sc_imag)
+    )
+
 
 class Trainer:
     def __init__(
@@ -64,7 +69,9 @@ class Trainer:
         self.train_loader = self.get_dataloader(train_data_path, specs_csv, spec_len)
         self.val_loader = self.get_dataloader(val_data_path, specs_csv, spec_len)
 
-    def get_dataloader(self, features_csv: str, spec_csv: str, spec_len: int) -> DataLoader:
+    def get_dataloader(
+        self, features_csv: str, spec_csv: str, spec_len: int
+    ) -> DataLoader:
         dataset = SpectrogramDataset(features_csv, spec_csv, spec_len)
         dataloader = DataLoader(
             dataset,
@@ -86,13 +93,14 @@ class Trainer:
 
             self.optimizer.zero_grad()
             outputs = self.model(features)
+
             loss = self.criterion(spectrograms, outputs)
             loss.backward()
             self.optimizer.step()
 
             total_loss += loss.item()
 
-        current_lr = self.optimizer.param_groups[0]['lr']
+        current_lr = self.optimizer.param_groups[0]["lr"]
         logger.info(f"Current learning rate: {current_lr:.6f}")
 
         return total_loss / len(self.train_loader)
@@ -125,7 +133,7 @@ class Trainer:
             patience=self.train_config.scheduler_patience,
             factor=self.train_config.scheduler_factor,
         )
-        
+
         early_stopping = EarlyStopping(
             patience=self.train_config.patience, verbose=True
         )
@@ -135,7 +143,7 @@ class Trainer:
             train_loss = self.train_epoch(epoch)
             val_loss = self.validate()
             self.scheduler.step(val_loss)
-            
+
             logger.info(
                 f"Epoch: {epoch + 1} Train Loss = {train_loss:.4f}, Val Loss = {val_loss:.4f}"
             )

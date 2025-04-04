@@ -56,7 +56,8 @@ def calculate_snr(reference, generated):
     except Exception as e:
         logger.error(f"Error calculating SNR: {e}")
         return -float("inf")
-    
+
+
 def get_mel_spectrogram(spectrogram: np.ndarray) -> np.ndarray:
     real_part = np.nan_to_num(spectrogram[0], nan=0.0, posinf=200.0, neginf=0.0)
     imag_part = np.nan_to_num(spectrogram[1], nan=0.0, posinf=200.0, neginf=0.0)
@@ -69,16 +70,16 @@ def calculate_mcd(reference_aud, generated_aud, n_mfcc=13, sr=22050):
     try:
         mfccs1 = librosa.feature.mfcc(y=reference_aud, sr=sr, n_mfcc=n_mfcc)
         mfccs2 = librosa.feature.mfcc(y=generated_aud, sr=sr, n_mfcc=n_mfcc)
-        
+
         # Ensure same shape by truncating to shorter length
         min_length = min(mfccs1.shape[1], mfccs2.shape[1])
         mfccs1 = mfccs1[:, :min_length]
         mfccs2 = mfccs2[:, :min_length]
-        
+
         # Calculate MCD
         diff = mfccs1 - mfccs2
         mcd = np.sqrt(np.mean(diff**2, axis=0))
-        
+
         return np.mean(mcd)
     except Exception as e:
         logger.error(f"Error calculating MCD: {e}")
@@ -87,15 +88,15 @@ def calculate_mcd(reference_aud, generated_aud, n_mfcc=13, sr=22050):
 
 def spectral_convergence(reference_spec, generated_spec):
     try:
-        ref_mag = np.sqrt(reference_spec[0]**2 + reference_spec[1]**2)
-        gen_mag = np.sqrt(generated_spec[0]**2 + generated_spec[1]**2)
-            
-        nom = np.linalg.norm(ref_mag - gen_mag, ord='fro')
-        denom = np.linalg.norm(ref_mag, ord='fro')
-        
+        ref_mag = np.sqrt(reference_spec[0] ** 2 + reference_spec[1] ** 2)
+        gen_mag = np.sqrt(generated_spec[0] ** 2 + generated_spec[1] ** 2)
+
+        nom = np.linalg.norm(ref_mag - gen_mag, ord="fro")
+        denom = np.linalg.norm(ref_mag, ord="fro")
+
         if denom == 0:
             return float("inf")
-            
+
         return nom / denom
     except Exception as e:
         logger.error(f"Error calculating spectral convergence: {e}")
@@ -135,7 +136,9 @@ class Tester:
     def get_dataloader(
         self, features_csv: str, spec_csv: str, batch_size: int, num_workers: int
     ) -> DataLoader:
-        dataset = SpectrogramDataset(features_csv, spec_csv, config.generator.max_length)
+        dataset = SpectrogramDataset(
+            features_csv, spec_csv, config.generator.max_length
+        )
         dataloader = DataLoader(
             dataset,
             batch_size=batch_size,
@@ -175,9 +178,7 @@ class Tester:
             f.write(f"MCD: {metrics['mcd']:.4f}\n")
             f.write(f"SC: {metrics['sc']:.4f}\n")
 
-        logger.info(
-            f"Saved audio sample {sample_idx} to {self.samples_dir}"
-        )
+        logger.info(f"Saved audio sample {sample_idx} to {self.samples_dir}")
 
     def test(self) -> dict:
         logger.info("Starting model evaluation...")
@@ -217,8 +218,8 @@ class Tester:
                     gen_spec = generated_specs_np[i]
                     tgt_spec = target_specs_np[i]
 
-                    metrics["mse"] = np.mean(np.sqrt((gen_spec - tgt_spec)**2))
-                    
+                    metrics["mse"] = np.mean(np.sqrt((gen_spec - tgt_spec) ** 2))
+
                     # Convert complex spectrograms to audio
                     generated_audio, _ = self.audio_generator(gen_spec)
                     target_audio, _ = self.audio_generator(tgt_spec)
@@ -229,7 +230,7 @@ class Tester:
                     )
                     if pesq_score < 1.5:
                         low_quality_count += 1
-                        
+
                     stoi_score = calculate_stoi(
                         target_audio, generated_audio, sr=self.sr
                     )
@@ -250,7 +251,7 @@ class Tester:
                             "stoi": stoi_score,
                             "snr": snr_score,
                             "mcd": mcd_score,
-                            "sc": sc_score
+                            "sc": sc_score,
                         }
                         self.save_audio_sample(
                             generated_audio,
@@ -262,10 +263,12 @@ class Tester:
                         sample_count += 1
 
                     global_sample_idx += 1
-                    
+
                 # Print low quality percentage after each batch
                 if batch_size > 0:
-                    logger.info(f"Low quality samples: {low_quality_count*100 / global_sample_idx:.2f}% ({low_quality_count}/{global_sample_idx})")
+                    logger.info(
+                        f"Low quality samples: {low_quality_count * 100 / global_sample_idx:.2f}% ({low_quality_count}/{global_sample_idx})"
+                    )
 
         # Calculate average metrics
         avg_metrics = {
@@ -286,7 +289,9 @@ class Tester:
         logger.info(f"MCD (lower is better): {avg_metrics['mcd']:.4f}")
         logger.info(f"Spectral Convergence (lower is better): {avg_metrics['sc']:.4f}")
         logger.info(f"Saved {sample_count}/{self.num_samples_to_save} audio samples")
-        logger.info(f"Low quality samples: {low_quality_count*100 / global_sample_idx:.2f}% ({low_quality_count}/{global_sample_idx})")
+        logger.info(
+            f"Low quality samples: {low_quality_count * 100 / global_sample_idx:.2f}% ({low_quality_count}/{global_sample_idx})"
+        )
 
         # Save detailed results to file
         results_file = self.output_dir / "test_results.txt"
@@ -295,14 +300,18 @@ class Tester:
             f.write(f"Sample rate: {self.sr}Hz\n")
             f.write("Vocoder: HiFiGAN (speechbrain/tts-hifigan-ljspeech)\n")
             f.write(f"Audio samples: {sample_count} (saved to {self.samples_dir})\n")
-            f.write(f"Low quality samples: {low_quality_count*100 / global_sample_idx:.2f}% ({low_quality_count}/{global_sample_idx})\n")
+            f.write(
+                f"Low quality samples: {low_quality_count * 100 / global_sample_idx:.2f}% ({low_quality_count}/{global_sample_idx})\n"
+            )
             f.write("\n## Average Metrics\n\n")
             f.write(f"- MSE: {avg_metrics['mse']:.4f}\n")
             f.write(f"- PESQ [-0.5 to 4.5]: {avg_metrics['pesq']:.4f}\n")
             f.write(f"- STOI [0 to 1]: {avg_metrics['stoi']:.4f}\n")
             f.write(f"- SNR: {avg_metrics['snr']:.4f} dB\n")
             f.write(f"- MCD (lower is better): {avg_metrics['mcd']:.4f}\n")
-            f.write(f"- Spectral Convergence (lower is better): {avg_metrics['sc']:.4f}\n")
+            f.write(
+                f"- Spectral Convergence (lower is better): {avg_metrics['sc']:.4f}\n"
+            )
 
         # Save metrics as CSV for easier analysis
         df = pd.DataFrame(metrics)
@@ -318,7 +327,7 @@ if __name__ == "__main__":
 
     load_model_weights(
         model,
-        Path(config.transformer.checkpoints) / "checkpoint_best.pt",
+        "experiments/combined/checkpoints/generator_best.pt",
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
     )
 

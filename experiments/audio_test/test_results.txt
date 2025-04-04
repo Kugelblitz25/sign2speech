@@ -3,13 +3,13 @@
 Sample rate: 22050Hz
 Vocoder: HiFiGAN (speechbrain/tts-hifigan-ljspeech)
 Audio samples: 10 (saved to experiments/audio_test/audio_samples)
-Low quality samples: 6.90% (40/580)
+Low quality samples: 11.21% (65/580)
 
 ## Average Metrics
 
-- MSE: 0.0582
-- PESQ [-0.5 to 4.5]: 2.3199
-- STOI [0 to 1]: 0.9093
-- SNR: 13.3210 dB
-- MCD (lower is better): 17.3087
-- Spectral Convergence (lower is better): 0.2319
+- MSE: 0.0103
+- PESQ [-0.5 to 4.5]: 3.3064
+- STOI [0 to 1]: 0.9307
+- SNR: 31.1449 dB
+- MCD (lower is better): 6.8919
+- Spectral Convergence (lower is better): 0.1484

@@ -2,13 +2,64 @@ import torch
 import torch.nn as nn
 
 
+class DeconvBlock(nn.Module):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel: tuple[int],
+        stride: tuple[int],
+        padding: tuple[int],
+        dropout: float,
+    ):
+        super().__init__()
+
+        self.block = nn.Sequential(
+            nn.ConvTranspose2d(
+                in_channels=in_channels,
+                out_channels=out_channels,
+                kernel_size=kernel,
+                stride=stride,
+                padding=padding,
+            ),
+            nn.InstanceNorm2d(out_channels),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+        )
+
+    def forward(self, x):
+        return self.block(x)
+
+
+class DeconvNetwork(nn.Module):
+    def __init__(self, init_kernels: int, spec_len: int):
+        super().__init__()
+
+        self.network = nn.Sequential(
+            DeconvBlock(init_kernels, 64, 3, (3, 2), (2, 2), 0.0),
+            DeconvBlock(64, 32, 5, (3, 2), (3, 2), 0.0),
+            DeconvBlock(32, 16, 7, (4, 2), (3, 2), 0.0),
+            DeconvBlock(16, 8, (7, spec_len - 54), (4, 1), (3, 2), 0.0),
+            nn.ConvTranspose2d(
+                in_channels=8, out_channels=1, kernel_size=3, stride=1, padding=1
+            ),
+        )
+
+    def forward(self, x):
+        return self.network(x)
+
+
 class SpectrogramGenerator(nn.Module):
     def __init__(
-        self, input_dim: int = 2048, hidden_dims: list[int] = [1024, 1024, 1600], spec_len = 64
+        self,
+        input_dim: int = 2048,
+        hidden_dims: list[int] = [648, 1296, 2592, 5184],
+        spec_len=64,
     ) -> None:
         super().__init__()
         mlp_layers = []
         current_dim = input_dim
+        self.init_kernels = 128
 
         for hidden_dim in hidden_dims:
             mlp_layers.extend(
@@ -22,73 +73,14 @@ class SpectrogramGenerator(nn.Module):
             current_dim = hidden_dim
 
         self.mlp = nn.Sequential(*mlp_layers)
-        self.mlp.append(nn.Linear(current_dim, 128 * 5 * 5))
+        self.mlp.append(nn.Linear(current_dim, self.init_kernels * 9 * 9))
 
-        self.abs = nn.Sequential(
-            nn.ConvTranspose2d(
-                128, 128, kernel_size=4, stride=2, padding=1
-            ),  # (128, 10, 10)
-            nn.LeakyReLU(),
-            nn.InstanceNorm2d(128),
-            nn.Dropout(0.1),
-            nn.ConvTranspose2d(
-                128, 64, kernel_size=4, stride=2, padding=1
-            ),  # (64, 20, 20)
-            nn.LeakyReLU(),
-            nn.InstanceNorm2d(64),
-            nn.Dropout(0.1),
-            nn.ConvTranspose2d(
-                64, 32, kernel_size=4, stride=2, padding=1
-            ),  # (32, 40, 40)
-            nn.LeakyReLU(),
-            nn.InstanceNorm2d(32),
-            nn.Dropout(0.1),
-            nn.ConvTranspose2d(
-                32, 16, kernel_size=(7, 3), stride=(5, 1), padding=(1, 1)
-            ),  # (16, 200, 40)
-            nn.LeakyReLU(),
-            nn.InstanceNorm2d(16),
-            nn.Dropout(0.1),
-            nn.ConvTranspose2d(
-                16, 1, kernel_size=(32, spec_len - 37), stride=(5, 1), padding=(1, 1)
-            )
-        )
-
-        self.angle = nn.Sequential(
-            nn.ConvTranspose2d(
-                128, 128, kernel_size=4, stride=2, padding=1
-            ),  # (128, 10, 10)
-            nn.LeakyReLU(),
-            nn.InstanceNorm2d(128),
-            nn.Dropout(0.1),
-            nn.ConvTranspose2d(
-                128, 64, kernel_size=4, stride=2, padding=1
-            ),  # (64, 20, 20)
-            nn.LeakyReLU(),
-            nn.InstanceNorm2d(64),
-            nn.Dropout(0.1),
-            nn.ConvTranspose2d(
-                64, 32, kernel_size=4, stride=2, padding=1
-            ),  # (32, 40, 40)
-            nn.LeakyReLU(),
-            nn.InstanceNorm2d(32),
-            nn.Dropout(0.1),
-            nn.ConvTranspose2d(
-                32, 16, kernel_size=(7, 3), stride=(5, 1), padding=(1, 1)
-            ),  # (16, 200, 40)
-            nn.LeakyReLU(),
-            nn.InstanceNorm2d(16),
-            nn.Dropout(0.1),
-            nn.ConvTranspose2d(
-                16, 1, kernel_size=(32, spec_len - 37), stride=(5, 1), padding=(1, 1)
-            )
-        )
-
-
+        self.abs = DeconvNetwork(self.init_kernels, spec_len)
+        self.angle = DeconvNetwork(self.init_kernels, spec_len)
 
     def forward(self, x: torch.tensor) -> torch.tensor:
         x = self.mlp(x)
-        x = x.view(-1, 128, 5, 5)
+        x = x.view(-1, self.init_kernels, 9, 9)
         abs = self.abs(x)
         theta = self.angle(x)
         spec = torch.concat([abs, theta], axis=1)

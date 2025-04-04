@@ -27,7 +27,7 @@ extractor:
   training:
     freeze: 0
     epochs: 100
-    batch_size: 4
+    batch_size: 3
     lr: 1.e-3
     weight_decay: 1.e-8
     patience: 5
