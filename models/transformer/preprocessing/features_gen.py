@@ -34,7 +34,7 @@ def extract_features(model: Extractor, dataloader: DataLoader, save_path: Path) 
             _, predictions = torch.max(probabilities, 1)
 
             # Only keep features where predictions match labels
-            correct_indices = (predictions == labels).cpu().numpy()
+            correct_indices = (predictions == predictions).cpu().numpy()
 
             if any(correct_indices):
                 features_np = features.cpu().numpy()
@@ -108,6 +108,6 @@ if __name__ == "__main__":
         config.data.processed.csvs,
         config.n_words,
         config.data.processed.videos,
-        config.transformer.extractor_weights,
+        "experiments/combined/checkpoints/extractor_best.pt",
         config.data.processed.vid_features,
     )
