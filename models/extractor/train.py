@@ -1,64 +1,78 @@
-import json
+from dataclasses import asdict
 from pathlib import Path
 
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from models.extractor.dataset import WLASLDataset, video_transform
-from models.extractor.model import ModifiedI3D
-from utils import EarlyStopping, save_model
+from models.extractor.dataset import WLASLDataset
+from models.extractor.model import Extractor
+from utils.common import create_path, get_logger
+from utils.config import ExtractorTraining as TrainConfig
+from utils.config import load_config
+from utils.model import EarlyStopping, save_model
+
+logger = get_logger("logs/extractor_training.log")
 
 
 class Trainer:
-    def __init__(self, config):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.config = config
-        self.output_path = Path(self.config["output_path"])
-        self.output_path.mkdir(exist_ok=True)
-        self.transform = video_transform()
-        print(f"Using Device: {self.device}")
+    def __init__(
+        self,
+        train_data_path: str,
+        val_data_path: str,
+        video_root: str,
+        model: Extractor,
+        train_config: TrainConfig,
+        checkpoint_path: str,
+    ) -> None:
+        self.device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+        self.train_config = train_config
+        self.checkpoint_path = create_path(checkpoint_path)
 
-        with open(self.config["train_data"]) as f:
-            self.train_data = json.load(f)
+        logger.debug(f"Using Device: {self.device}")
 
-        with open(self.config["val_data"]) as f:
-            self.val_data = json.load(f)
+        train_data = pd.read_csv(train_data_path)
+        val_data = pd.read_csv(val_data_path)
 
-        print(f"Num Classes: {self.config['num_classes']}")
+        self.model = model.to(self.device)
+        self.train_loader = self.get_dataloader(train_data, video_root)
+        self.val_loader = self.get_dataloader(val_data, video_root)
 
-        self.model = ModifiedI3D(self.config["num_classes"]).to(self.device)
-        self.train_loader = self.get_dataloader(self.train_data)
-        self.val_loader = self.get_dataloader(self.val_data)
-
-    def get_dataloader(self, data):
-        dataset = WLASLDataset(
-            data, self.config["video_root"], transform=self.transform
-        )
+    def get_dataloader(self, data: pd.DataFrame, video_root: str) -> DataLoader:
+        dataset = WLASLDataset(data, video_root)
         dataloader = DataLoader(
             dataset,
-            batch_size=self.config["batch_size"],
+            batch_size=self.train_config.batch_size,
             shuffle=True,
-            num_workers=self.config["num_workers"],
+            num_workers=self.train_config.num_workers,
         )
         return dataloader
 
-    def train_epoch(self, epoch: int):
+    def train_epoch(self, epoch: int) -> tuple[float, float]:
         self.model.train()
         train_loss = 0.0
         correct_train = 0
         total_train = 0
-        for inputs, labels in tqdm(
-            self.train_loader, desc=f"Epoch {epoch+1}/{self.config['epochs']}"
+
+        self.optimizer.zero_grad()
+        for step, (inputs, labels) in enumerate(
+            tqdm(
+                self.train_loader,
+                desc=f"Epoch {epoch + 1}/{self.train_config.epochs}",
+            ),
+            1,
         ):
             inputs, labels = inputs.to(self.device), labels.to(self.device)
-            self.optimizer.zero_grad()
             _, outputs = self.model(inputs)
             loss = self.criterion(outputs, labels)
             loss.backward()
-            self.optimizer.step()
+
+            if step % 8 == 0 or step == len(self.train_loader):
+                self.optimizer.step()
+                self.optimizer.zero_grad()
 
             train_loss += loss.item()
             _, predicted = torch.max(outputs, 1)
@@ -69,13 +83,13 @@ class Trainer:
         train_acc = 100.0 * correct_train / total_train
         return train_acc, train_loss
 
-    def validate(self):
+    def validate(self) -> tuple[float, float]:
         val_loss = 0.0
         correct_val = 0
         total_val = 0
         self.model.eval()
         with torch.no_grad():
-            for inputs, labels in tqdm(self.val_loader, desc=f"Validation"):
+            for inputs, labels in tqdm(self.val_loader, desc="Validation"):
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 _, outputs = self.model(inputs)
                 loss = self.criterion(outputs, labels)
@@ -88,71 +102,91 @@ class Trainer:
         val_acc = 100.0 * correct_val / total_val
         return val_acc, val_loss
 
-    def train(self):
-        self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = optim.Adam(
-            self.model.parameters(),
-            lr=self.config["lr"],
-            weight_decay=self.config["weight_decay"],
+    def save_model(self, val_loss: float, file_name: str | Path) -> None:
+        save_model(
+            self.model,
+            asdict(self.train_config),
+            val_loss,
+            self.checkpoint_path / ("full_" + str(file_name)),
         )
-        early_stopping = EarlyStopping(patience=self.config["patience"], verbose=True)
+        save_model(
+            self.model.base,
+            asdict(self.train_config),
+            val_loss,
+            self.checkpoint_path / ("base_" + str(file_name)),
+        )
+
+    def train(self) -> tuple[float, float, float, float]:
+        self.criterion = nn.CrossEntropyLoss()
+
+        # self.optimizer = optim.Adam(
+        # self.model.parameters(),
+        # lr=self.train_config.lr,
+        # weight_decay=self.train_config.weight_decay,
+        # )
+        self.optimizer = optim.SGD(
+            self.model.parameters(),
+            lr=self.train_config.lr,
+            momentum=0.9,
+            weight_decay=self.train_config.weight_decay,
+        )
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer,
+            mode="min",
+            factor=self.train_config.scheduler_factor,
+            patience=self.train_config.scheduler_factor,
+        )
+        early_stopping = EarlyStopping(
+            patience=self.train_config.patience, verbose=True
+        )
 
         # Training
-        for epoch in range(self.config["epochs"]):
+        best_train_acc = 0.0
+        best_test_acc = 0.0
+
+        for epoch in range(self.train_config.epochs):
             train_acc, train_loss = self.train_epoch(epoch)
             val_acc, val_loss = self.validate()
-            print(
+            scheduler.step(val_loss)
+            logger.info(
                 f"Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}, Train Accuracy: {train_acc:.2f}%, Val Accuracy: {val_acc:.2f}%"
             )
 
             # Check early stopping condition
             early_stopping(val_loss)
             if early_stopping.best_loss == val_loss:
-                print("Best Model. Saving ...")
-                save_model(
-                    self.model,
-                    self.optimizer,
-                    self.config,
-                    val_loss,
-                    self.output_path / "checkpoint_best.pt",
-                )
+                logger.info("Best Model. Saving ...")
+                self.save_model(val_loss, f"best_{self.model.base.name}.pt")
+                best_train_acc, best_test_acc = train_acc, val_acc
 
-            if early_stopping.early_stop and self.config["enable_earlystop"]:
-                print("Early stopping triggered. Stopping training.")
-                save_model(
-                    self.model,
-                    self.optimizer,
-                    self.config,
-                    val_loss,
-                    self.output_path / "checkpoint_final.pt",
+            if early_stopping.early_stop and self.train_config.enable_earlystop:
+                logger.warning(
+                    f"Early stopping triggered. Stopping training with best_loss: {early_stopping.best_loss:.4f}."
                 )
                 break
 
-        save_model(
-            self.model,
-            self.optimizer,
-            self.config,
-            val_loss,
-            self.output_path / "checkpoint_final.pt",
-        )
+        # Save final model
+        self.save_model(val_loss, f"final_{self.model.base.name}.pt")
+        return best_train_acc, best_test_acc, train_acc, val_acc
 
 
 if __name__ == "__main__":
-    import argparse
+    config = load_config("Train and validate video classification model")
 
-    parser = argparse.ArgumentParser(
-        description="Train and validate video classification model"
+    logger.debug(f"Num Classes: {config.n_words}")
+
+    model = Extractor(
+        num_classes=config.n_words,
+        base_model=config.extractor.model,
+        n_freeze=config.extractor.training.freeze,
     )
-    parser.add_argument(
-        "--config",
-        type=str,
-        default="models/extractor/config.json",
-        help="Path to the config file",
+
+    trainer = Trainer(
+        config.data.processed.csvs.train,
+        config.data.processed.csvs.val,
+        config.data.processed.videos,
+        model,
+        config.extractor.training,
+        config.extractor.checkpoints,
     )
-    args = parser.parse_args()
-
-    with open(args.config) as f:
-        config = json.load(f)
-
-    trainer = Trainer(config)
     trainer.train()

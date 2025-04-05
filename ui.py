@@ -1,23 +1,19 @@
-import gradio as gr
-from models import Sign2Speech
-import soundfile as sf
 import tempfile
-import cv2
 
-model = Sign2Speech(hop_length=3, win_size=50, threshold=0.7)
+import gradio as gr
+import numpy as np
+import soundfile as sf
+
+from models import Sign2Speech
+from utils.config import load_config
+
+config = load_config("Generate Audio")
+
+model = Sign2Speech(num_words=config.n_words, config=config.pipeline)
 
 
-def predict(file: str):
-    frames = []
-    cap = cv2.VideoCapture(file)
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-        frames.append(frame)
-
-    cap.release()
-    audio = model(frames)
+def predict(file: str) -> np.ndarray:
+    audio = model(file)
     with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_audio_file:
         sf.write(temp_audio_file.name, audio, 22050)
         audio_path = temp_audio_file.name

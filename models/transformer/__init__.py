@@ -1,16 +1,16 @@
 import torch
-from utils import load_model_weights
 
 from models.transformer.model import SpectrogramGenerator
+from utils.model import load_model_weights
 
 
 class FeatureTransformer:
-    def __init__(self, weights_path: str):
+    def __init__(self, weights_path: str) -> None:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = SpectrogramGenerator().to(self.device)
-        self.model = load_model_weights(self.model, weights_path)
+        load_model_weights(self.model, weights_path, self.device)
 
-    def __call__(self, features):
+    def __call__(self, features: torch.tensor) -> torch.tensor:
         self.model.eval()
         with torch.no_grad():
             spec = self.model(features)

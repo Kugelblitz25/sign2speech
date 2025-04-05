@@ -1,7 +1,8 @@
 data/
-experiments
 checkpoints
 .venv
 __pycache__
 *.log
+*.pth
+*.pt
 uv.lock

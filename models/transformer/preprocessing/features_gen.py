@@ -1,109 +1,113 @@
-import json
 from pathlib import Path
 
 import pandas as pd
 import torch
-from sklearn.model_selection import train_test_split
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from models.extractor.dataset import WLASLDataset, video_transform
-from models.extractor.model import ModifiedI3D
-from utils import load_model_weights
+from models.extractor.dataset import WLASLDataset
+from models.extractor.model import Extractor
+from utils.common import create_path, get_logger
+from utils.config import Splits, load_config
+from utils.model import load_model_weights
+
+logger = get_logger("logs/feature_generation.log")
 
 
-def extract_features(model, test_loader, save_path):
+def extract_features(model: Extractor, dataloader: DataLoader, save_path: Path) -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    save_path = Path(save_path)
-    save_path.mkdir(exist_ok=True)
     all_features = []
     all_video_ids = []
-
     model.eval()
     with torch.no_grad():
         for batch_idx, (inputs, labels) in enumerate(
-            tqdm(test_loader, desc=f"Feature Extraction")
+            tqdm(dataloader, desc="Feature Extraction")
         ):
             inputs, labels = inputs.to(device), labels.to(device)
-            features, _ = model(inputs)
-            features = features.cpu().numpy()
+            features, logits = model(inputs)
 
-            # Get video IDs for this batch
-            start_idx = batch_idx * test_loader.batch_size
-            end_idx = start_idx + inputs.size(0)
-            batch_video_ids = [
-                test_loader.dataset.data[i]["video_id"]
-                for i in range(start_idx, min(end_idx, len(test_loader.dataset)))
-            ]
+            # Convert logits to probabilities using softmax
+            probabilities = F.softmax(logits, dim=1)
 
-            # Store features and metadata
-            all_features.extend(features)
-            all_video_ids.extend(batch_video_ids)
+            # Get predictions from probabilities
+            _, predictions = torch.max(probabilities, 1)
 
-    feature_cols = [f"feature_{i}" for i in range(features.shape[1])]
-    df = pd.DataFrame(all_features, columns=feature_cols)
-    df["video_id"] = all_video_ids
-    video_to_gloss = {
-        item["video_id"]: item["gloss"] for item in test_loader.dataset.data
-    }
-    df["gloss"] = df["video_id"].map(video_to_gloss)
+            # Only keep features where predictions match labels
+            correct_indices = (predictions == predictions).cpu().numpy()
 
-    xtrain, xval = train_test_split(df, test_size=0.2)
-    xtrain.to_csv(save_path / "features_train.csv", index=False)
-    xval.to_csv(save_path / "features_val.csv", index=False)
-    print(f"Features saved to {save_path}")
+            if any(correct_indices):
+                features_np = features.cpu().numpy()
+                correct_features = features_np[correct_indices]
+
+                # Get video IDs for this batch
+                start_idx = batch_idx * dataloader.batch_size
+                end_idx = min(
+                    start_idx + dataloader.batch_size, len(dataloader.dataset)
+                )
+                batch_video_ids = dataloader.dataset.data.loc[
+                    start_idx : end_idx - 1, "Video file"
+                ].to_list()
+
+                # Only keep video IDs with correct predictions
+                correct_video_ids = [
+                    vid
+                    for i, vid in enumerate(batch_video_ids)
+                    if i < len(correct_indices) and correct_indices[i]
+                ]
+
+                all_features.extend(correct_features)
+                all_video_ids.extend(correct_video_ids)
+
+    if all_features:
+        feature_cols = [f"feature_{i}" for i in range(len(all_features[0]))]
+        df = pd.DataFrame(all_features, columns=feature_cols)
+        df["Video file"] = all_video_ids
+
+        data = dataloader.dataset.data
+        video_to_gloss = {
+            data.iloc[i]["Video file"]: data.iloc[i]["Gloss"] for i in range(len(data))
+        }
+        df["Gloss"] = df["Video file"].map(video_to_gloss)
+        df.to_csv(save_path, index=False)
+        logger.info(
+            f"Features saved to {save_path} with {len(df)}/{len(dataloader.dataset)} matching samples"
+        )
+    else:
+        logger.warning(f"No matching predictions found for {save_path}")
+        # Create empty dataframe with expected columns
+        feature_cols = [f"feature_{i}" for i in range(model.output_dim)]
+        df = pd.DataFrame(columns=feature_cols + ["Video file", "Gloss"])
+        df.to_csv(save_path, index=False)
 
 
-def main(test_data: str, video_root: str, weights: str, save_path: str):
+def main(
+    data_path: Splits,
+    num_words: int,
+    video_root: str,
+    weights: str,
+    save_path: Splits,
+) -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using Device: {device}")
+    logger.debug(f"Using Device: {device}")
+    model = Extractor(num_words).to(device)
+    load_model_weights(model, weights, device)
 
-    with open(test_data) as f:
-        test_data = json.load(f)
-
-    transform = video_transform()
-    test_dataset = WLASLDataset(test_data, video_root, transform=transform)
-    test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False, num_workers=4)
-
-    num_classes = 100
-    model = ModifiedI3D(num_classes).to(device)
-    model = load_model_weights(model, weights)
-    print(f"Num Classes: {num_classes}")
-
-    extract_features(model, test_loader, save_path)
+    for split in ["train", "test", "val"]:
+        csv_path = getattr(data_path, split)
+        data = pd.read_csv(csv_path)
+        dataset = WLASLDataset(data, video_root)
+        dataloader = DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4)
+        output_path = create_path(getattr(save_path, split))
+        extract_features(model, dataloader, output_path)
 
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Feature Generation for Spectrogram Generation"
+    config = load_config("Feature Generation for Spectrogram Generation")
+    main(
+        config.data.processed.csvs,
+        config.n_words,
+        config.data.processed.videos,
+        "experiments/combined/checkpoints/extractor_best.pt",
+        config.data.processed.vid_features,
     )
-
-    parser.add_argument(
-        "--datafile",
-        type=str,
-        default="data/processed/extractor/train_100.json",
-        help="Path to the testing data JSON file",
-    )
-    parser.add_argument(
-        "--video_root",
-        type=str,
-        default="data/processed/extractor/videos",
-        help="Directory containing videos",
-    )
-    parser.add_argument(
-        "--weights_path",
-        type=str,
-        default="models/extractor/checkpoints/checkpoint_final.pt",
-        help="Path to load the model weights",
-    )
-    parser.add_argument(
-        "--save_path",
-        type=str,
-        default="data/processed/transformer",
-        help="Path to save the extracted features CSV file",
-    )
-
-    args = parser.parse_args()
-    main(args.datafile, args.video_root, args.weights_path, args.save_path)

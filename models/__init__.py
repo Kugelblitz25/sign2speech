@@ -1,67 +1,29 @@
-from models.extractor import FeatureExtractor
-from models.transformer import FeatureTransformer
-from models.generator import AudioGenerator
-import numpy as np
+from pathlib import Path
+
+import cv2
 import librosa
+import numpy as np
 
-
-class NMS:
-    def __init__(
-        self,
-        extractor: FeatureExtractor,
-        hop_length: int = 1,
-        win_size: int = 50,
-        overlap: int = 0,
-        threshold: float = 0.9,
-    ) -> None:
-        self.extractor = extractor
-        self.hop_length = hop_length
-        self.win_size = win_size
-        self.overlap = overlap
-        self.threshold = threshold
-
-    def predict(self, frames: list):
-        features = {}
-        for i in range(0, len(frames), self.hop_length):
-            ft, conf, _ = self.extractor(frames[i : i + self.win_size])
-            features[i] = [ft, conf.cpu().numpy()[0]]
-        return features
-
-    def __call__(self, frames: list):
-        features = self.predict(frames)
-        frame_idxs = [
-            idx for idx, (_, prob) in features.items() if prob > self.threshold
-        ]
-        frame_idxs = sorted(frame_idxs, key=lambda x: features[x][1])
-        good_preds = []
-        while len(frame_idxs) > 0:
-            frame_idx = frame_idxs.pop()
-            good_preds.append(frame_idx)
-            frame_idxs = [
-                i
-                for i in frame_idxs
-                if abs(i - frame_idx) > self.win_size - self.overlap
-            ]
-        return {idx: features[idx][0] for idx in good_preds}
+from models.extractor import FeatureExtractor
+from models.generator import AudioGenerator
+from models.nms import NMS
+from models.transformer import FeatureTransformer
+from utils.config import PipelineConfig
 
 
 class Sign2Speech:
     def __init__(
         self,
-        hop_length: int = 5,
-        win_size: int = 64,
-        overlap: int = 0,
-        threshold: float = 0.6,
-        extractor_checkpoint="models/extractor/checkpoints/checkpoint_final.pt",
-        transformer_checkpoint="models/transformer/checkpoints/checkpoint_final.pt",
-    ):
-        self.extractor = FeatureExtractor(extractor_checkpoint)
-        self.transformer = FeatureTransformer(transformer_checkpoint)
+        num_words: int,
+        config: PipelineConfig,
+    ) -> None:
+        self.extractor = FeatureExtractor(config.extractor_weights, num_words)
+        self.transformer = FeatureTransformer(config.transformer_weights)
         self.generator = AudioGenerator()
         self.fps = 30
-        self.nms = NMS(self.extractor, hop_length, win_size, overlap, threshold)
+        self.nms = NMS(self.extractor, config.nms)
 
-    def combine_audio(self, audios):
+    def combine_audio(self, audios: list[tuple[int, np.ndarray]]) -> np.ndarray:
         audio_concat = np.zeros(int((audios[0][0] / self.fps + 1) * self.generator.sr))
         for idx, (frame_idx, audio) in enumerate(audios[:-1]):
             video_dur = (audios[idx + 1][0] - frame_idx) / self.fps
@@ -78,13 +40,28 @@ class Sign2Speech:
             audio_concat = np.concatenate([audio_concat, audio])
         return audio_concat
 
-    def __call__(self, frames: list):
+    def get_frames(self, path: str | Path) -> list[np.ndarray]:
+        frame_list = []
+        cap = cv2.VideoCapture(path)
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame_list.append(frame)
+        cap.release()
+        return frame_list
+
+    def __call__(self, frames: list[np.ndarray] | str | Path) -> np.ndarray:
+        if not isinstance(frames, list):
+            frames = self.get_frames(frames)
+
         predictions = self.nms(frames)
+
         for frame_idx in predictions:
             spec = self.transformer(predictions[frame_idx])
             audio, _ = self.generator(spec)
             predictions[frame_idx] = audio
-        audios = [[key, val] for key, val in predictions.items()]
-        audios = sorted(audios, key=lambda x: x[0])
-        audios.append([len(frames), -1])
+        audios = [(key, val) for key, val in predictions.items()]
+        audios = sorted(audios)
+        audios.append((len(frames), -1))
         return self.combine_audio(audios)

@@ -11,7 +11,7 @@ from models.transformer.model import SpectrogramGenerator
 from utils.common import create_path, get_logger
 from utils.config import TransformerTraining as TrainConfig
 from utils.config import load_config
-from utils.model import EarlyStopping, save_model
+from utils.model import EarlyStopping, load_model_weights, save_model
 
 logger = get_logger("logs/transformer_training.log")
 
@@ -20,7 +20,7 @@ def spectral_convergence_loss(mel_true, mel_pred):
     return torch.norm(mel_true - mel_pred, p="fro") / torch.norm(mel_true, p="fro")
 
 
-def complex_loss(true_complex, pred_complex, lambda_sc=0.5, lambda_mse=0):
+def complex_loss(true_complex, pred_complex, lambda_sc=0.5, lambda_mse=0.0):
     # Extract real and imaginary parts
     true_real, true_imag = true_complex[:, 0:1], true_complex[:, 1:2]
     pred_real, pred_imag = pred_complex[:, 0:1], pred_complex[:, 1:2]
@@ -65,7 +65,10 @@ class Trainer:
         self.checkpoint_path = create_path(checkpoint_path)
         logger.debug(f"Using Device: {self.device}")
 
-        self.model = SpectrogramGenerator().to(self.device)
+        self.model = SpectrogramGenerator(spec_len=spec_len).to(self.device)
+        load_model_weights(
+            self.model, self.checkpoint_path / "checkpoint_best.pt", self.device
+        )
         self.train_loader = self.get_dataloader(train_data_path, specs_csv, spec_len)
         self.val_loader = self.get_dataloader(val_data_path, specs_csv, spec_len)
 
@@ -93,15 +96,11 @@ class Trainer:
 
             self.optimizer.zero_grad()
             outputs = self.model(features)
-
             loss = self.criterion(spectrograms, outputs)
             loss.backward()
             self.optimizer.step()
 
             total_loss += loss.item()
-
-        current_lr = self.optimizer.param_groups[0]["lr"]
-        logger.info(f"Current learning rate: {current_lr:.6f}")
 
         return total_loss / len(self.train_loader)
 
@@ -127,13 +126,7 @@ class Trainer:
             lr=self.train_config.lr,
             weight_decay=self.train_config.weight_decay,
         )
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer,
-            mode="min",
-            patience=self.train_config.scheduler_patience,
-            factor=self.train_config.scheduler_factor,
-        )
-
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(self.optimizer, 50)
         early_stopping = EarlyStopping(
             patience=self.train_config.patience, verbose=True
         )
@@ -142,8 +135,7 @@ class Trainer:
         for epoch in range(self.train_config.epochs):
             train_loss = self.train_epoch(epoch)
             val_loss = self.validate()
-            self.scheduler.step(val_loss)
-
+            scheduler.step()
             logger.info(
                 f"Epoch: {epoch + 1} Train Loss = {train_loss:.4f}, Val Loss = {val_loss:.4f}"
             )

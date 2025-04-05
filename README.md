@@ -14,7 +14,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Feature Extractor (Modified I3D)
+### Download data
 
 ---
 
@@ -26,7 +26,11 @@ curl -L -o archive.zip 'https://www.kaggle.com/api/v1/datasets/download/risangba
 
 - Unzip the `archive.zip` into `data/raw` folder.
 
-- Generate the spectrograms and select Top 100 classes with highest number of instances in the dataset
+- Configurations are stored in `config.yaml` file.
+
+### Feature Extractor (Modified I3D)
+
+- Generate the spectrograms and select Top K classes with highest number of instances in the dataset
 
 ```shell
 python3 models/generator/preprocessing/spec_gen.py
@@ -41,8 +45,7 @@ python3 models/extractor/preprocessing/verify.py
 - Augment the videos to generate more data
 
 ```shell
-python3 models/extractor/preprocessing/augmentation.py --datafile data/processed/extractor/train_100.json
-python3 models/extractor/preprocessing/augmentation.py --datafile data/processed/extractor/test_100.json
+python3 models/extractor/preprocessing/augmentation.py
 ```
 
 - Train the model
@@ -50,8 +53,6 @@ python3 models/extractor/preprocessing/augmentation.py --datafile data/processed
 ```shell
 python3 models/extractor/train.py
 ```
-
-Adjust the train parameters in `models/extractor/config.json`
 
 > **Note**: If you get `ModuleNotFoundError: No module named 'models'`, run
 >
@@ -99,7 +100,7 @@ python3 test.py
 
 ## Gradio Interface
 
-For gradio interface run 
+For gradio interface run
 
 ```shell
 python3 ui.py

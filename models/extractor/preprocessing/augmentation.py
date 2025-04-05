@@ -1,90 +1,75 @@
-import json
-import logging
 import random
 from pathlib import Path
 
 import cv2
+import pandas as pd
 import torch
 import torchvision.transforms.functional as TF
 from pytorchvideo.data.encoded_video import EncodedVideo
-from torchvision import transforms
+from pytorchvideo.transforms import Permute, ShortSideScale
+from torchvision.transforms import ColorJitter, Compose, Lambda
+from torchvision.transforms._transforms_video import (
+    CenterCropVideo,
+)
 from tqdm import tqdm
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+from utils.common import create_path, get_logger
+from utils.config import Splits, load_config
+
+logger = get_logger("logs/video_augmentation.log")
 
 
-class VideoAugmenter:
-    def apply_augmentation(self, frames):
-        """Apply random augmentations to video frames"""
-        augmented_frames = []
+def apply_augmentation(frames: torch.Tensor) -> torch.Tensor:
+    side_size = 256
+    crop_size = 256
+    transform = Compose(
+        [
+            ShortSideScale(size=side_size),
+            CenterCropVideo(crop_size=(crop_size, crop_size)),
+            Permute((1, 0, 2, 3)),
+            Lambda(lambda x: (x / 255.0)),
+            ColorJitter(brightness=0.6, contrast=0.6, hue=0.2, saturation=0.6),
+            Lambda(lambda x: (x * 255.0)),
+        ]
+    )
+    rotation_angle = random.uniform(-15, 15)
+    tot_frames = int(frames.shape[1])
+    temporal_mask = torch.ones(tot_frames, dtype=torch.bool)
+    num_frames_to_drop = random.randint(0, tot_frames // 8)
+    drop_indices = random.sample(range(tot_frames), num_frames_to_drop)
+    temporal_mask[drop_indices] = False
 
-        # Random augmentation parameters (consistent across frames)
-        brightness_factor = random.uniform(0.6, 1.6)
-        contrast_factor = random.uniform(0.6, 1.6)
-        hue_factor = random.uniform(-0.2, 0.2)
-        saturation_factor = random.uniform(0.6, 1.6)
-        rotation_angle = random.uniform(-15, 15)
+    frames_aug = transform(frames)
+    frames_aug = frames_aug[temporal_mask, :, :, :]
+    frames_aug = TF.rotate(frames_aug, rotation_angle)
+    return frames_aug
 
-        # Random temporal sampling (speed variation)
-        temporal_mask = torch.ones(len(frames))
-        num_frames_to_drop = random.randint(0, len(frames) // 4)
-        drop_indices = random.sample(range(len(frames)), num_frames_to_drop)
-        temporal_mask[drop_indices] = 0
 
-        for i, frame in enumerate(frames):
-            if temporal_mask[i] == 0:
-                continue
-            frame_pil = TF.to_pil_image(frame)
-            frame_aug = TF.rotate(frame_pil, rotation_angle)
-            frame_aug = TF.adjust_brightness(frame_aug, brightness_factor)
-            frame_aug = TF.adjust_contrast(frame_aug, contrast_factor)
-            frame_aug = TF.adjust_hue(frame_aug, hue_factor)
-            frame_aug = TF.adjust_saturation(frame_aug, saturation_factor)
-            frame_aug = TF.to_tensor(frame_aug)
-            augmented_frames.append(frame_aug)
+def save_video(frames: torch.Tensor, output_path: str | Path, fps: int = 25) -> None:
+    height, width = frames.shape[2], frames.shape[3]
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
-        return torch.stack(augmented_frames)
+    for frame_tensor in frames:
+        frame_np = (frame_tensor).permute(1, 2, 0).cpu().numpy().astype("uint8")
+        frame_bgr = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
+        out.write(frame_bgr)
 
-    def save_video(self, frames, output_path, fps=30):
-        height, width = frames[0].shape[1], frames[0].shape[2]
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-
-        for frame_tensor in frames:
-            frame_np = (
-                (255 - frame_tensor * 255)
-                .byte()
-                .permute(1, 2, 0)
-                .numpy()
-                .astype("uint8")
-            )
-            frame_bgr = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
-            out.write(frame_bgr)
-
-        out.release()
+    out.release()
 
 
 def augment_dataset(
-    data: list[dict], video_root: str, output_dir: str, num_augmentations: int = 3
-):
-    # Create augmenter
-    augmenter = VideoAugmenter()
-
-    # Transform for loading original videos
-    transform = transforms.Compose(
-        [
-            transforms.ToPILImage(),
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-        ]
-    )
-
+    data: pd.DataFrame,
+    video_root: Path,
+    output_dir: Path,
+    num_augmentations: int = 3,
+) -> pd.DataFrame:
     augmented_data = []
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    for item in tqdm(data, desc="Augmenting videos"):
-        video_path = video_root / f"{item['video_id']}.mp4"
+    for row in tqdm(range(len(data)), desc="Augmenting videos"):
+        item = data.iloc[row]
+        video_path = video_root / item["Video file"]
 
         try:
             # Load original video
@@ -93,82 +78,58 @@ def augment_dataset(
             video_frames = video_data["video"]
 
             # Process original frames
-            processed_frames = []
-            x1, y1, x2, y2 = item["bbox"]
-            w, h = video_frames.shape[2], video_frames.shape[3]
-            x1, x2 = max(0, x1 - 50), min(h, x2 + 50)
-            y1, y2 = max(0, y1 - 50), min(w, y2 + 50)
-            for i in range(video_frames.shape[1]):
-                frame = video_frames[:, i, y1:y2, x1:x2]
-                processed_frames.append(transform(frame))
-            processed_frames = torch.stack(processed_frames, dim=0)
+            # processed_frames = []
+            # x1, y1, x2, y2 = item["bbox"]
+            # w, h = video_frames.shape[2], video_frames.shape[3]
+            # x1, x2 = max(0, x1 - 50), min(h, x2 + 50)
+            # y1, y2 = max(0, y1 - 50), min(w, y2 + 50)
+            # for i in range(video_frames.shape[1]):
+            #     frame = video_frames[:, i, :, :]  # y1:y2, x1:x2]
+            #     processed_frames.append(frame)
 
             # Generate augmented versions
             for i in range(num_augmentations):
-                augmented_frames = augmenter.apply_augmentation(processed_frames)
-                video_id = item["video_id"]
-                new_video_path = output_dir / f"{video_id}_{i}.mp4"
-                augmenter.save_video(augmented_frames, new_video_path)
-                augmented_data.append(
-                    {
-                        "gloss": item["gloss"],
-                        "video_id": f"{video_id}_{i}",
-                    }
-                )
+                augmented_frames = apply_augmentation(video_frames.to(device))
+                video_file = item["Video file"]
+                new_video_path = output_dir / f"{i}_{video_file}"
+                save_video(augmented_frames, new_video_path)
+                new_item = item.copy()
+                new_item["Video file"] = f"{i}_{video_file}"
+                augmented_data.append(new_item)
 
         except Exception as e:
-            logging.error(f"Failed to augment video {video_path}: {str(e)}")
+            logger.error(f"Failed to augment video {video_path}: {str(e)}")
             continue
 
-    return augmented_data
+    return pd.concat(augmented_data, axis=1).T
+
+
+def main(
+    csvs_path: Splits,
+    video_root: str,
+    output_video_dir: Path,
+    num_augmentations: int,
+) -> None:
+    for split in ["train", "test", "val"]:
+        csv_path = getattr(csvs_path, split)
+        data = pd.read_csv(csv_path)
+        augmented_data = augment_dataset(
+            data, Path(video_root), output_video_dir, num_augmentations
+        )
+        augmented_data.to_csv(csv_path, index=False)
+
+        logger.info(f"Created {len(augmented_data)} augmented videos for {csv_path}")
 
 
 # Example usage
 if __name__ == "__main__":
-    import argparse
+    config = load_config("Video Data Augmentation for Sign Language Dataset")
 
-    parser = argparse.ArgumentParser(
-        description="Video Data Augmentation for Sign Language Dataset"
-    )
-    parser.add_argument(
-        "--datafile",
-        type=str,
-        default="data/raw/train_100.json",
-        help="Path to JSON file containing video information",
-    )
-    parser.add_argument(
-        "--video_root",
-        type=str,
-        default="data/raw/videos",
-        help="Directory containing videos",
-    )
-    parser.add_argument(
-        "--output_dir",
-        type=str,
-        default="data/processed/extractor",
-        help="Directory to save augmented videos",
-    )
-    parser.add_argument(
-        "--num_augmentations",
-        type=int,
-        default=3,
-        help="Number of augmented versions to create per video (default: 3)",
-    )
+    output_video_dir = create_path(config.data.processed.videos)
 
-    args = parser.parse_args()
-    with open(args.datafile) as f:
-        data = json.load(f)
-
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(exist_ok=True, parents=True)
-    output_video_dir = output_dir / "videos"
-    output_video_dir.mkdir(exist_ok=True)
-
-    augmented_data = augment_dataset(
-        data, Path(args.video_root), output_video_dir, args.num_augmentations
+    main(
+        config.data.processed.csvs,
+        config.data.raw.videos,
+        output_video_dir,
+        config.extractor.num_augmentations,
     )
-    new_datafile = output_dir / Path(args.datafile).name
-    with open(new_datafile, "w") as f:
-        json.dump(augmented_data, f, indent=4)
-
-    logging.info(f"Created {len(augmented_data)} augmented videos")

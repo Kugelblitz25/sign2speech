@@ -1,15 +1,15 @@
 import json
 import random
 from pathlib import Path
+
 import cv2
 import torch
 from pytorchvideo.data.encoded_video import EncodedVideo
 from tqdm import tqdm
-import logging
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+from utils.common import get_logger
+
+logger = get_logger("locs/create_test_videos.log")
 
 
 def load_and_crop_video(video_path, bbox, resize_dim=(224, 224)):
@@ -31,7 +31,7 @@ def load_and_crop_video(video_path, bbox, resize_dim=(224, 224)):
 
         return torch.stack(cropped_frames)
     except Exception as e:
-        logging.error(f"Error loading or cropping video {video_path}: {str(e)}")
+        logger.error(f"Error loading or cropping video {video_path}: {str(e)}")
         return None
 
 
@@ -97,7 +97,7 @@ def create_combined_videos(
                 / f"{'_'.join([item['gloss'] for item in selected_items])}.mp4"
             )
             save_concatenated_video(frames_list, combined_video_path)
-            logging.info(f"Saved combined video: {combined_video_path}")
+            logger.info(f"Saved combined video: {combined_video_path}")
 
 
 # Example usage

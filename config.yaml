@@ -1,0 +1,64 @@
+n_words: 100
+
+data:
+  raw:
+    videos: data/wlasl/raw/videos
+    csvs:
+      train: data/wlasl/raw/wlasl_train_100.csv
+      test: data/wlasl/raw/wlasl_test_100.csv
+      val: data/wlasl/raw/wlasl_val_100.csv
+  processed:
+    videos: data/wlasl/processed/videos # preprocessed and augmented videos
+    csvs:
+      train: data/wlasl/processed/train.csv
+      test: data/wlasl/processed/test.csv
+      val: data/wlasl/processed/val.csv
+    classlist: data/wlasl/processed/classes.txt # words used
+    specs: data/wlasl/processed/specs.csv # spectograms
+    vid_features: # features generated using extractor
+      train: data/wlasl/processed/features_train.csv # features generated using extractor
+      test: data/wlasl/processed/features_test.csv
+      val: data/wlasl/processed/features_val.csv
+
+extractor:
+  num_augmentations: 5
+  checkpoints: models/extractor/checkpoints
+  model: i3d
+  training:
+    freeze: 0
+    epochs: 100
+    batch_size: 3
+    lr: 1.e-3
+    weight_decay: 1.e-8
+    patience: 5
+    scheduler_patience: 2
+    scheduler_factor: 0.3
+    enable_earlystop: true
+    num_workers: 4
+
+transformer:
+  extractor_weights: models/extractor/checkpoints/full_best_i3d.pt # To create features before training
+  checkpoints: models/transformer/checkpoints
+  training:
+    epochs: 500
+    batch_size: 64
+    lr: 1.e-02
+    weight_decay: 1.e-8
+    patience: 10
+    scheduler_patience: 3
+    scheduler_factor: 0.1
+    enable_earlystop: true
+    num_workers: 4
+
+generator:
+  checkpoints: models/generator/checkpoints
+  max_length: 64
+
+pipeline: # To use for complete pipeline
+  nms:
+    win_size: 50
+    hop_length: 3
+    overlap: 0
+    threshold: 0.7
+  extractor_weights: models/extractor/checkpoints/full_best_i3d.pt
+  transformer_weights: models/transformer/checkpoints/checkpoint_best.pt
