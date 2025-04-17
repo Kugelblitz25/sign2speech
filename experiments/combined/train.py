@@ -288,7 +288,7 @@ if __name__ == "__main__":
         spec_len=config.generator.max_length,
     )
 
-    load_model_weights(model.extractor.base, "models/extractor/checkpoints/base_best_i3d_1500.pt", "cuda:1")
+    # load_model_weights(model.extractor.base, "models/extractor/checkpoints/base_best_i3d_1500.pt", "cuda:1")
 
     trainer = CombinedTrainer(
         train_data_path=config.data.processed.csvs.train,
