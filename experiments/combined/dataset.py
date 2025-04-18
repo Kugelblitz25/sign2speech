@@ -3,13 +3,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import torch
 from pytorchvideo.data.encoded_video import EncodedVideo
 from pytorchvideo.transforms import (
     ApplyTransformToKey,
     ShortSideScale,
     UniformTemporalSubsample,
 )
-import torch
 from torch.utils.data import Dataset
 from torchvision.transforms import Compose, Lambda
 from torchvision.transforms._transforms_video import CenterCropVideo

@@ -8,8 +8,8 @@ from tqdm import tqdm
 from experiments.combined.dataset import CombinedDataset
 from experiments.combined.model import CombinedModel
 from utils.common import create_path, get_logger
-from utils.config import load_config, ExtractorTraining, TransformerTraining
-from utils.model import EarlyStopping, save_model, load_model_weights
+from utils.config import ExtractorTraining, TransformerTraining, load_config
+from utils.model import EarlyStopping, save_model
 
 logger = get_logger("logs/combined_training.log")
 
@@ -40,7 +40,7 @@ def complex_loss(true_complex, pred_complex, lambda_sc=0.5):
     return 2 * (l1_real + l1_imag + mag_loss) + lambda_sc * (sc_real + sc_imag)
 
 
-def combined_loss(true_label, logits, true_spec, pred_spec, spec_weight=0.8):
+def combined_loss(true_label, logits, true_spec, pred_spec, spec_weight=2):
     cls_loss = F.cross_entropy(logits, true_label)
     spec_loss = complex_loss(true_spec, pred_spec)
     return cls_loss + spec_weight * spec_loss
@@ -128,6 +128,8 @@ class CombinedTrainer:
         correct = 0
         total = 0
 
+        batch = 1
+
         for videos, labels, spectrograms in tqdm(
             self.train_loader,
             desc=f"Epoch {epoch + 1}/{self.epochs}",
@@ -140,14 +142,16 @@ class CombinedTrainer:
             loss = self.criterion(labels, logits, spectrograms, pred_specs)
 
             # Backward and optimize
-            self.optimizer.zero_grad()
             loss.backward()
-            self.optimizer.step()
+            if batch % 8 == 0 or batch == len(self.train_loader):
+                self.optimizer.step()
+                self.optimizer.zero_grad()
             total_loss += loss.item()
 
             _, predicted = torch.max(F.softmax(logits, dim=1), 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
+            batch += 1
 
         train_acc = 100.0 * correct / total
         return (
@@ -219,7 +223,7 @@ class CombinedTrainer:
             patience=self.transformer_config.patience, verbose=True
         )
 
-        logger.info(f"Starting combined training.")
+        logger.info("Starting combined training.")
 
         self.epochs = epochs
 

@@ -21,7 +21,7 @@ data:
       val: data/asl-citizen/processed/features_val.csv
 
 extractor:
-  num_augmentations: 5
+  num_augmentations: 3
   checkpoints: models/extractor/checkpoints
   model: i3d
   training:
@@ -52,7 +52,7 @@ transformer:
 
 generator:
   checkpoints: models/generator/checkpoints
-  max_length: 64
+  max_length: 128
 
 pipeline: # To use for complete pipeline
   nms:
