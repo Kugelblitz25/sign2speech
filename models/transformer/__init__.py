@@ -5,9 +5,9 @@ from utils.model import load_model_weights
 
 
 class FeatureTransformer:
-    def __init__(self, weights_path: str) -> None:
+    def __init__(self, weights_path: str, spec_len: int) -> None:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = SpectrogramGenerator().to(self.device)
+        self.model = SpectrogramGenerator(spec_len=spec_len).to(self.device)
         load_model_weights(self.model, weights_path, self.device)
 
     def __call__(self, features: torch.tensor) -> torch.tensor:

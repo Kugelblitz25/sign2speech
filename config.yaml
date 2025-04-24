@@ -2,11 +2,11 @@ n_words: 200
 
 data:
   raw:
-    videos: data/asl-citizen/raw/videos_1500
+    videos: data/asl-citizen/raw/videos
     csvs:
-      train: data/asl-citizen/raw/train_200.csv
-      test: data/asl-citizen/raw/test_200.csv
-      val: data/asl-citizen/raw/val_200.csv
+      train: data/asl-citizen/raw/train_10.csv
+      test: data/asl-citizen/raw/test_10.csv
+      val: data/asl-citizen/raw/val_10.csv
   processed:
     videos: data/asl-citizen/processed/videos # preprocessed and augmented videos
     csvs:
@@ -21,7 +21,7 @@ data:
       val: data/asl-citizen/processed/features_val.csv
 
 extractor:
-  num_augmentations: 3
+  num_augmentations: 5
   checkpoints: models/extractor/checkpoints
   model: i3d
   training:
@@ -52,13 +52,13 @@ transformer:
 
 generator:
   checkpoints: models/generator/checkpoints
-  max_length: 128
+  max_length: 64
 
 pipeline: # To use for complete pipeline
   nms:
-    win_size: 50
+    win_size: 40
     hop_length: 3
-    overlap: 0
+    overlap: 10
     threshold: 0.7
-  extractor_weights: models/extractor/checkpoints/full_best_i3d.pt
-  transformer_weights: models/transformer/checkpoints/checkpoint_best.pt
+  extractor_weights: experiments/combined/checkpoints/extractor_best.pt
+  transformer_weights: experiments/combined/checkpoints/generator_best.pt

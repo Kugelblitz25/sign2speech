@@ -28,7 +28,7 @@ def verify_videos(
     ):
         if (not torch.all(video_data == 0)) and (
             label_to_class[label.numpy()[0]] in classlist
-        ):
+        ) and video_data.shape[2] >= 10:
             good_videos.append(data.iloc[idx])
 
     # Report results

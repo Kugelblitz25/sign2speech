@@ -322,7 +322,7 @@ class Tester:
 if __name__ == "__main__":
     config = load_config("Testing spectrogram generator")
 
-    model = SpectrogramGenerator()
+    model = SpectrogramGenerator(spec_len=100)
 
     load_model_weights(
         model,
