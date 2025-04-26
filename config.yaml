@@ -57,8 +57,8 @@ generator:
 pipeline: # To use for complete pipeline
   nms:
     win_size: 40
-    hop_length: 3
-    overlap: 10
+    hop_length: 5
+    overlap: 5
     threshold: 0.7
   extractor_weights: experiments/combined/checkpoints/extractor_best.pt
   transformer_weights: experiments/combined/checkpoints/generator_best.pt

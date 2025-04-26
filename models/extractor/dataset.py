@@ -59,8 +59,10 @@ class WLASLDataset(Dataset):
         try:
             video = EncodedVideo.from_path(video_path)
             video_data = video.get_clip(start_sec=0, end_sec=clip_duration)
+            if video_data['video'].shape[1] <= 20:
+                raise ValueError("Incomplete Video")
             video_data = transform(video_data)
             return video_data["video"], label
         except Exception as e:
             logging.warning(f"Failed to load video {video_path}: {str(e)}")
-            return torch.zeros((3, 32, 224, 224)), label
+            return torch.zeros((3, num_frames, 224, 224)), label
