@@ -20,9 +20,9 @@ class FeatureExtractor:
 
     def __call__(self, frames: list[np.ndarray]) -> tuple[torch.Tensor, float, int]:
         frames = self.stack_frames(frames)
-        frames = transform(frames).to(self.device).unsqueeze(0)
+        frames = transform({"video": frames})["video"].to(self.device).unsqueeze(0)
         self.model.eval()
         with torch.no_grad():
             features, confs = self.model(frames)
-            max_conf, idx = torch.max(F.softmax(confs, dim=1), 1)
-        return features, max_conf.cpu().numpy()[0], idx.cpu().numpy()[0]
+            max_conf, _ = torch.max(F.softmax(confs, dim=1), 1)
+        return features, max_conf.cpu().numpy()[0]

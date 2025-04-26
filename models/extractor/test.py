@@ -198,4 +198,6 @@ if __name__ == "__main__":
     )
 
     results = tester.evaluate()
-    tester.print_results(results, create_path(Path(config.extractor.checkpoints)/"test_results"))
+    tester.print_results(
+        results, create_path(Path(config.extractor.checkpoints) / "test_results")
+    )

@@ -1,0 +1,15 @@
+# Spectrogram Generator Test Results
+
+Sample rate: 22050Hz
+Vocoder: HiFiGAN (speechbrain/tts-hifigan-ljspeech)
+Audio samples: 10 (saved to experiments/audio_test/audio_samples)
+Low quality samples: 14.61% (111/760)
+
+## Average Metrics
+
+- MSE: 0.0162
+- PESQ [-0.5 to 4.5]: 2.8614
+- STOI [0 to 1]: 0.8906
+- SNR: 25.9927 dB
+- MCD (lower is better): 7.4702
+- Spectral Convergence (lower is better): 0.1951

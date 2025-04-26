@@ -5,12 +5,11 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "fairseq>=0.12.2",
+    "gradio>=5.23.3",
     "gtts>=2.5.4",
     "librosa>=0.10.2.post1",
     "matplotlib>=3.10.0",
     "mediapipe==0.10.9",
-    "nemo>=7.0.2",
     "opencv-contrib-python>=4.11.0.86",
     "pandas>=2.2.3",
     "pytorchvideo>=0.1.5",
@@ -18,10 +17,8 @@ dependencies = [
     "seaborn>=0.13.2",
     "soundfile>=0.13.0",
     "speechbrain>=1.0.2",
-    "tensorboardx>=2.6.2.2",
     "torch>=2.5.1",
     "torchvision>=0.20.1",
-    "transformers>=4.49.0",
 ]
 
 [tool.uv.sources]
@@ -31,4 +28,9 @@ pytorchvideo = { git = "https://github.com/facebookresearch/pytorchvideo" }
 test = [
     "pesq>=0.0.4",
     "pystoi>=0.4.1",
+    "jiwer>=3.1.0",
+    "moviepy>=1.0.3",
+    "nltk>=3.9.1",
+    "openai-whisper>=20240930",
+
 ]

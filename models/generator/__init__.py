@@ -9,7 +9,7 @@ checkpoint_path = create_path(config.generator.checkpoints)
 
 
 class AudioGenerator:
-    def __init__(self, sr: int = 22050) -> None:
+    def __init__(self, sr: int = 24000) -> None:
         self.sr = sr
 
     def __call__(self, spec_complex: np.ndarray) -> tuple[np.ndarray, int]:
