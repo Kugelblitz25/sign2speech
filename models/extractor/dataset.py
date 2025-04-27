@@ -59,7 +59,7 @@ class WLASLDataset(Dataset):
         try:
             video = EncodedVideo.from_path(video_path)
             video_data = video.get_clip(start_sec=0, end_sec=clip_duration)
-            if video_data['video'].shape[1] <= 20:
+            if video_data["video"].shape[1] <= 20:
                 raise ValueError("Incomplete Video")
             video_data = transform(video_data)
             return video_data["video"], label

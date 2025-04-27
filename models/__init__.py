@@ -34,35 +34,24 @@ class Sign2Speech:
                 audio = np.concatenate((audio, silence_pad))
             else:
                 stretch_factor = audio_dur / video_dur
+                if stretch_factor < 0:
+                    print(video_dur, audio_dur, stretch_factor)
                 audio = librosa.effects.time_stretch(
-                        y=audio.astype(float), rate=stretch_factor
-                    )
+                    y=audio.astype(float), rate=stretch_factor
+                )
             audio_concat = np.concatenate([audio_concat, audio])
         return audio_concat
 
-    def get_frames(self, path: str | Path) -> list[np.ndarray]:
-        frame_list = []
-        cap = cv2.VideoCapture(path)
-        self.fps = cap.get(cv2.CAP_PROP_FPS)
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            frame_list.append(frame)
-        cap.release()
-        return frame_list
+    def __call__(self, frames: str | Path) -> np.ndarray:
+        video = cv2.VideoCapture(frames)
+        self.fps = video.get(cv2.CAP_PROP_FPS)
 
-    def __call__(self, frames: list[np.ndarray] | str | Path) -> np.ndarray:
-        if not isinstance(frames, list):
-            frames = self.get_frames(frames)
+        predictions = []
+        for frame_idx, feature in tqdm(self.nms(video), desc="Generating Audio"):
+            if feature is not None:
+                spec = self.transformer(feature).cpu().numpy().squeeze(0)
+                audio, _ = self.generator(spec)
+                predictions.append((frame_idx, audio))
 
-        predictions = self.nms(frames)
-
-        for frame_idx in tqdm(predictions, desc="Generating Audio"):
-            spec = self.transformer(predictions[frame_idx]).cpu().numpy().squeeze(0)
-            audio, _ = self.generator(spec)
-            predictions[frame_idx] = audio
-        audios = [(key, val) for key, val in predictions.items()]
-        audios = sorted(audios)
-        audios.append((len(frames), -1))
-        return self.combine_audio(audios)
+        video.release()
+        return self.combine_audio(predictions)
