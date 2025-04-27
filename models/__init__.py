@@ -47,11 +47,26 @@ class Sign2Speech:
         self.fps = video.get(cv2.CAP_PROP_FPS)
 
         predictions = []
-        for frame_idx, feature in tqdm(self.nms(video), desc="Generating Audio"):
-            if feature is not None:
-                spec = self.transformer(feature).cpu().numpy().squeeze(0)
-                audio, _ = self.generator(spec)
-                predictions.append((frame_idx, audio))
+        frame_count = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+        with tqdm(total=frame_count, desc="Processing Frames") as pbar:
+            while True:
+                ret, frame = video.read()
+                if not ret:
+                    break
+
+                index, feature = self.nms(frame)
+                if index != -1:
+                    spec = self.transformer(feature).cpu().numpy().squeeze(0)
+                    audio, _ = self.generator(spec)
+                    predictions.append((index, audio))
+                pbar.update(1)
+
+        if self.nms.best_window_idx is not None:
+            spec = self.transformer(self.nms.best_feature).cpu().numpy().squeeze(0)
+            audio, _ = self.generator(spec)
+            predictions.append((self.nms.best_window_idx, audio))
+
+        predictions.append((frame_count, None))
 
         video.release()
         return self.combine_audio(predictions)

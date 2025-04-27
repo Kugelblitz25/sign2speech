@@ -147,7 +147,7 @@ def main(csv_file, n, k, video_base_dir):
             # Process the concatenated video
             try:
                 t1 = time.time()
-                audio_path = predict("output.mp4", temp_dir)
+                audio_path = predict(concat_video_path, temp_dir)
                 t2 = time.time()
             except Exception as e:
                 print(f"Error processing concatenated video: {e}")
