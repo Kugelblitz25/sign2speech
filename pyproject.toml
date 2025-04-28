@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "gradio>=5.23.3",
+    "gradio>=5.27.0",
     "gtts>=2.5.4",
     "librosa>=0.10.2.post1",
     "matplotlib>=3.10.0",

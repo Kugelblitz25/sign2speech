@@ -35,7 +35,6 @@ class NMS:
                 self.best_confidence = confidence
             return -1, None
 
-
         self.window_index += 1
         if not self.window_index % self.hop_length == 0:
             return -1, None
@@ -50,7 +49,7 @@ class NMS:
 
         if self.best_window_idx is None:
             return -1, None
-            
+
         if (self.window_index - self.best_window_idx) > (self.win_size - self.overlap):
             return_index = self.best_window_idx
             return_feature = self.best_feature

@@ -20,6 +20,7 @@ config = load_config("Generate Audio")
 model = Sign2Speech(
     num_words=config.n_words,
     spec_len=config.generator.max_length,
+    fps=31.08,
     config=config.pipeline,
 )
 asr_model = whisper.load_model("medium")  # or "tiny", "small", etc.
@@ -151,7 +152,7 @@ def main(csv_file, n, k, video_base_dir):
                 t2 = time.time()
             except Exception as e:
                 print(f"Error processing concatenated video: {e}")
-            
+
             hypothesis = transcribe_audio(audio_path)
             metrics = evaluate(combined_gloss, hypothesis)
 
