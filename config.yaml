@@ -53,12 +53,13 @@ transformer:
 generator:
   checkpoints: models/generator/checkpoints
   max_length: 64
+  sr: 24000
 
 pipeline: # To use for complete pipeline
   nms:
     win_size: 40
     hop_length: 5
-    overlap: 5
+    overlap: 3
     threshold: 0.7
   extractor_weights: experiments/combined/checkpoints/extractor_best.pt
   transformer_weights: experiments/combined/checkpoints/generator_best.pt

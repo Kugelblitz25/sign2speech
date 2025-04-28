@@ -74,6 +74,7 @@ class Transformer:
 class Generator:
     checkpoints: str
     max_length: int
+    sr: int
 
 
 @dataclass
@@ -186,6 +187,7 @@ def load_config(desc: str) -> Config:
     generator = Generator(
         checkpoints=config_dict["generator"]["checkpoints"],
         max_length=config_dict["generator"]["max_length"],
+        sr=config_dict["generator"]["sr"],
     )
 
     nms = NMSConfig(
