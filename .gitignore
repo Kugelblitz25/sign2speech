@@ -5,4 +5,5 @@ __pycache__
 *.log
 *.pth
 *.pt
+experiments/audio_test/audio_samples/*
 uv.lock
