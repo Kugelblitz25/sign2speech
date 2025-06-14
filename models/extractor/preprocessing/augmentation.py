@@ -62,10 +62,10 @@ def augment_dataset(
     data: pd.DataFrame,
     video_root: Path,
     output_dir: Path,
-    num_augmentations: int = 3,
+    num_augmentations: int,
+    device: torch.device,
 ) -> pd.DataFrame:
     augmented_data = []
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     for row in tqdm(range(len(data)), desc="Augmenting videos"):
         item = data.iloc[row]
@@ -109,21 +109,23 @@ def main(
     video_root: str,
     output_video_dir: Path,
     num_augmentations: int,
+    device: torch.device,
 ) -> None:
     for split in ["train", "test", "val"]:
         csv_path = getattr(csvs_path, split)
         data = pd.read_csv(csv_path)
         augmented_data = augment_dataset(
-            data, Path(video_root), output_video_dir, num_augmentations
+            data, Path(video_root), output_video_dir, num_augmentations, device
         )
         augmented_data.to_csv(csv_path, index=False)
 
         logger.info(f"Created {len(augmented_data)} augmented videos for {csv_path}")
 
 
-# Example usage
 if __name__ == "__main__":
     config = load_config("Video Data Augmentation for Sign Language Dataset")
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     output_video_dir = create_path(config.data.processed.videos)
 
@@ -132,4 +134,5 @@ if __name__ == "__main__":
         config.data.raw.videos,
         output_video_dir,
         config.extractor.num_augmentations,
+        device,
     )

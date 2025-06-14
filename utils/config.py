@@ -48,6 +48,7 @@ class Training:
 @dataclass
 class ExtractorTraining(Training):
     freeze: int
+    momentum: float
 
 
 @dataclass
@@ -60,7 +61,7 @@ class Extractor:
 
 @dataclass
 class TransformerTraining(Training):
-    pass
+    scheduler_max_T: int
 
 
 @dataclass
@@ -74,6 +75,15 @@ class Transformer:
 class Generator:
     checkpoints: str
     max_length: int
+
+
+@dataclass
+class Combined:
+    checkpoints: str
+    epochs: int
+    batch_size: int
+    patience: int
+    num_workers: int
 
 
 @dataclass
@@ -98,11 +108,11 @@ class Config:
     extractor: Extractor
     transformer: Transformer
     generator: Generator
+    combined: Combined
     pipeline: PipelineConfig
 
 
-# Function to load config from YAML file
-def load_config(desc: str) -> Config:
+def load_config(desc: str, **kwargs) -> Config:
     parser = argparse.ArgumentParser(description=desc)
 
     parser.add_argument(
@@ -111,12 +121,15 @@ def load_config(desc: str) -> Config:
         default="config.yaml",
         help="Path to the config file",
     )
+
+    for arg_name, arg_config in kwargs.items():
+        parser.add_argument(f"--{arg_name}", **arg_config)
+
     args = parser.parse_args()
 
     with open(args.config_file, "r") as f:
         config_dict = yaml.safe_load(f)
 
-    # Create nested objects
     raw_csvs = config_dict["data"]["raw"]["csvs"]
     raw_data = RawData(
         videos=config_dict["data"]["raw"]["videos"],
@@ -151,6 +164,7 @@ def load_config(desc: str) -> Config:
         batch_size=config_dict["extractor"]["training"]["batch_size"],
         lr=config_dict["extractor"]["training"]["lr"],
         weight_decay=config_dict["extractor"]["training"]["weight_decay"],
+        momentum=config_dict["extractor"]["training"]["momentum"],
         patience=config_dict["extractor"]["training"]["patience"],
         scheduler_patience=config_dict["extractor"]["training"]["scheduler_patience"],
         scheduler_factor=config_dict["extractor"]["training"]["scheduler_factor"],
@@ -173,6 +187,7 @@ def load_config(desc: str) -> Config:
         patience=config_dict["transformer"]["training"]["patience"],
         scheduler_patience=config_dict["transformer"]["training"]["scheduler_patience"],
         scheduler_factor=config_dict["transformer"]["training"]["scheduler_factor"],
+        scheduler_max_T=config_dict["transformer"]["training"]["scheduler_max_T"],
         enable_earlystop=config_dict["transformer"]["training"]["enable_earlystop"],
         num_workers=config_dict["transformer"]["training"]["num_workers"],
     )
@@ -188,6 +203,14 @@ def load_config(desc: str) -> Config:
         max_length=config_dict["generator"]["max_length"],
     )
 
+    combined = Combined(
+        checkpoints=config_dict["combined"]["checkpoints"],
+        epochs=config_dict["combined"]["epochs"],
+        batch_size=config_dict["combined"]["batch_size"],
+        patience=config_dict["combined"]["patience"],
+        num_workers=config_dict["combined"]["num_workers"],
+    )
+
     nms = NMSConfig(
         win_size=config_dict["pipeline"]["nms"]["win_size"],
         hop_length=config_dict["pipeline"]["nms"]["hop_length"],
@@ -201,11 +224,18 @@ def load_config(desc: str) -> Config:
         transformer_weights=config_dict["pipeline"]["transformer_weights"],
     )
 
-    return Config(
+    config = Config(
         n_words=config_dict["n_words"],
         data=data,
         extractor=extractor,
         transformer=transformer,
         generator=generator,
+        combined=combined,
         pipeline=pipeline,
     )
+
+    for key, value in vars(args).items():
+        if not hasattr(config, key):
+            setattr(config, key, value)
+
+    return config

@@ -7,9 +7,9 @@ class DeconvBlock(nn.Module):
         self,
         in_channels: int,
         out_channels: int,
-        kernel: tuple[int],
-        stride: tuple[int],
-        padding: tuple[int],
+        kernel: int | tuple[int, int],
+        stride: int | tuple[int, int],
+        padding: int | tuple[int, int],
         dropout: float,
     ):
         super().__init__()
