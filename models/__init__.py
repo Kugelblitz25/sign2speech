@@ -35,8 +35,8 @@ class Sign2Speech:
             else:
                 stretch_factor = audio_dur / video_dur
                 audio = librosa.effects.time_stretch(
-                        y=audio.astype(float), rate=stretch_factor
-                    )
+                    y=audio.astype(float), rate=stretch_factor
+                )
             audio_concat = np.concatenate([audio_concat, audio])
         return audio_concat
 

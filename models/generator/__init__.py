@@ -1,12 +1,6 @@
 import librosa
 import numpy as np
 
-from utils.common import create_path
-from utils.config import load_config
-
-config = load_config("Generate Audio")
-checkpoint_path = create_path(config.generator.checkpoints)
-
 
 class AudioGenerator:
     def __init__(self, sr: int = 24000) -> None:

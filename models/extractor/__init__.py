@@ -18,7 +18,7 @@ class FeatureExtractor:
         frames_array = np.moveaxis(frames_array, -1, 0)
         return torch.tensor(frames_array)
 
-    def __call__(self, frames: list[np.ndarray]) -> tuple[torch.Tensor, float, int]:
+    def __call__(self, frames: list[np.ndarray]) -> tuple[torch.Tensor, float]:
         frames = self.stack_frames(frames)
         frames = transform({"video": frames})["video"].to(self.device).unsqueeze(0)
         self.model.eval()
