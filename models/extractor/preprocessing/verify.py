@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader
@@ -12,23 +10,16 @@ from utils.config import Splits, load_config
 logger = get_logger("logs/video_verify.log")
 
 
-def verify_videos(
-    datafile_path: str, video_root: str, classlist: set[str]
-) -> pd.DataFrame:
+def verify_videos(datafile_path: str, video_root: str) -> pd.DataFrame:
     # Create dataset and dataloader
-    data = pd.read_csv(datafile_path)
-    dataset = WLASLDataset(data, video_root)
-    label_to_class = {val: key for key, val in dataset.class_to_idx.items()}
+    dataset = WLASLDataset(datafile_path, video_root)
     dataloader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=4)
+    data = pd.read_csv(datafile_path)
 
     # Verify videos
     good_videos = []
-    for idx, (video_data, label) in enumerate(
-        tqdm(dataloader, desc="Verifying videos")
-    ):
-        if (not torch.all(video_data == 0)) and (
-            label_to_class[label.numpy()[0]] in classlist
-        ):
+    for idx, (video_data, _) in enumerate(tqdm(dataloader, desc="Verifying videos")):
+        if not torch.all(video_data == 0):
             good_videos.append(data.iloc[idx])
 
     # Report results
@@ -43,17 +34,13 @@ def verify_videos(
 
 def main(
     csvs_path: Splits,
-    classlist_path: str | Path,
     video_root: str,
     verified_csvs_path: Splits,
 ) -> None:
-    with open(classlist_path) as f:
-        classes = set([word.strip() for word in f.readlines()])
-
     for split in ["train", "test", "val"]:
         csv_path = getattr(csvs_path, split)
         verified_csv_path = create_path(getattr(verified_csvs_path, split))
-        verified_data = verify_videos(csv_path, video_root, classes)
+        verified_data = verify_videos(csv_path, video_root)
         verified_data.to_csv(verified_csv_path, index=False)
 
 
@@ -62,7 +49,6 @@ if __name__ == "__main__":
 
     main(
         config.data.raw.csvs,
-        config.data.processed.classlist,
         config.data.raw.videos,
         config.data.processed.csvs,
     )

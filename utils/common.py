@@ -1,5 +1,9 @@
 import logging
+import tempfile
+from collections import Counter
 from pathlib import Path
+
+import pandas as pd
 
 
 def get_logger(loc: str) -> logging.Logger:
@@ -32,3 +36,15 @@ def create_path(path_str: str | Path) -> Path:
     else:
         path.parent.mkdir(exist_ok=True, parents=True)
     return path
+
+
+def create_subset(source_file: str | Path, n_words: int) -> Path:
+    data = pd.read_csv(source_file)
+    freq = dict(Counter(data.Gloss.to_list()))
+    words = sorted(freq, key=lambda x: -freq[x])
+    top_n_words = words[:n_words]
+
+    subset_data = data[data.Gloss.isin(top_n_words)]
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as temp_file:
+        subset_data.to_csv(temp_file.name, index=False)
+    return Path(temp_file.name)

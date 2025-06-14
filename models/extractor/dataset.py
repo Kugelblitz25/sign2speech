@@ -42,11 +42,11 @@ transform = ApplyTransformToKey(
 
 
 class WLASLDataset(Dataset):
-    def __init__(self, data: pd.DataFrame, video_dir: str) -> None:
-        self.data = data
+    def __init__(self, videos_csv: str | Path, video_dir: str | Path) -> None:
+        self.data = pd.read_csv(videos_csv)
         self.video_dir = Path(video_dir)
         self.transform = transform
-        self.classes = sorted(data.Gloss.unique())
+        self.classes = sorted(self.data.Gloss.unique())
         self.class_to_idx = {cls: idx for idx, cls in enumerate(self.classes)}
 
     def __len__(self) -> int:
@@ -59,8 +59,6 @@ class WLASLDataset(Dataset):
         try:
             video = EncodedVideo.from_path(video_path)
             video_data = video.get_clip(start_sec=0, end_sec=clip_duration)
-            if video_data['video'].shape[1] <= 20:
-                raise ValueError("Incomplete Video")
             video_data = transform(video_data)
             return video_data["video"], label
         except Exception as e:

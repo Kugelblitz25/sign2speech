@@ -11,10 +11,10 @@ class SpectrogramDataset(Dataset):
         self.features_df = pd.read_csv(features_csv)
         feature_cols = [col for col in self.features_df.columns if "feature_" in col]
         self.specs_df = pd.read_csv(spectrograms_csv)
-        specs = self.specs_df.drop("word", axis=1).values
+        specs = self.specs_df.drop("Gloss", axis=1).values
 
         self.spectrograms = {}
-        for word, spec in zip(self.specs_df["word"], specs):
+        for word, spec in zip(self.specs_df["Gloss"], specs):
             if not np.allclose(spec, 0):
                 reshaped_features = spec.reshape(-1, 2)
                 real_part = reshaped_features[:, 0]

@@ -1,7 +1,6 @@
 from dataclasses import asdict
 from pathlib import Path
 
-import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -10,10 +9,10 @@ from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
 from models.extractor.model import Extractor
-from utils.common import create_path, get_logger
+from utils.common import create_path, create_subset, get_logger
 from utils.config import ExtractorTraining as TrainConfig
 from utils.config import load_config
-from utils.model import EarlyStopping, save_model
+from utils.model import EarlyStopping, load_model_weights, save_model
 
 logger = get_logger("logs/extractor_training.log")
 
@@ -21,28 +20,28 @@ logger = get_logger("logs/extractor_training.log")
 class Trainer:
     def __init__(
         self,
-        train_data_path: str,
-        val_data_path: str,
-        video_root: str,
+        train_data_path: str | Path,
+        val_data_path: str | Path,
+        video_root: str | Path,
         model: Extractor,
         train_config: TrainConfig,
         checkpoint_path: str,
+        device: torch.device,
     ) -> None:
-        self.device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+        self.device = device
         self.train_config = train_config
         self.checkpoint_path = create_path(checkpoint_path)
 
         logger.debug(f"Using Device: {self.device}")
 
-        train_data = pd.read_csv(train_data_path)
-        val_data = pd.read_csv(val_data_path)
+        self.model = model
+        self.train_loader = self.get_dataloader(train_data_path, video_root)
+        self.val_loader = self.get_dataloader(val_data_path, video_root)
 
-        self.model = model.to(self.device)
-        self.train_loader = self.get_dataloader(train_data, video_root)
-        self.val_loader = self.get_dataloader(val_data, video_root)
-
-    def get_dataloader(self, data: pd.DataFrame, video_root: str) -> DataLoader:
-        dataset = WLASLDataset(data, video_root)
+    def get_dataloader(
+        self, data_path: str | Path, video_root: str | Path
+    ) -> DataLoader:
+        dataset = WLASLDataset(data_path, video_root)
         dataloader = DataLoader(
             dataset,
             batch_size=self.train_config.batch_size,
@@ -118,16 +117,10 @@ class Trainer:
 
     def train(self) -> tuple[float, float, float, float]:
         self.criterion = nn.CrossEntropyLoss()
-
-        # self.optimizer = optim.Adam(
-        # self.model.parameters(),
-        # lr=self.train_config.lr,
-        # weight_decay=self.train_config.weight_decay,
-        # )
         self.optimizer = optim.SGD(
             self.model.parameters(),
             lr=self.train_config.lr,
-            momentum=0.9,
+            momentum=self.train_config.momentum,
             weight_decay=self.train_config.weight_decay,
         )
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
@@ -171,22 +164,38 @@ class Trainer:
 
 
 if __name__ == "__main__":
-    config = load_config("Train and validate video classification model")
+    config = load_config(
+        "Train and validate video classification model",
+        weights_path={
+            "type": str,
+            "default": None,
+            "help": "Path to the model weights to load for fine-tuning",
+        },
+    )
+
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 
     logger.debug(f"Num Classes: {config.n_words}")
+
+    train_data = create_subset(config.data.processed.csvs.train, config.n_words)
+    val_data = create_subset(config.data.processed.csvs.val, config.n_words)
 
     model = Extractor(
         num_classes=config.n_words,
         base_model=config.extractor.model,
         n_freeze=config.extractor.training.freeze,
-    )
+    ).to(device)
+
+    if config.weights_path:
+        load_model_weights(model, config.weights_path, device)
 
     trainer = Trainer(
-        config.data.processed.csvs.train,
-        config.data.processed.csvs.val,
+        train_data,
+        val_data,
         config.data.processed.videos,
         model,
         config.extractor.training,
         config.extractor.checkpoints,
+        device=device,
     )
     trainer.train()

@@ -9,7 +9,7 @@ from experiments.combined.dataset import CombinedDataset
 from experiments.combined.model import CombinedModel
 from utils.common import create_path, get_logger
 from utils.config import ExtractorTraining, TransformerTraining, load_config
-from utils.model import EarlyStopping, save_model
+from utils.model import EarlyStopping, load_model_weights, save_model
 
 logger = get_logger("logs/combined_training.log")
 
@@ -292,7 +292,16 @@ if __name__ == "__main__":
         spec_len=config.generator.max_length,
     )
 
-    # load_model_weights(model.extractor.base, "models/extractor/checkpoints/base_best_i3d_1500.pt", "cuda:1")
+    load_model_weights(
+        model.extractor.base,
+        "experiments/combined/checkpoints/extractor_best_1500_base.pt",
+        "cuda:1",
+    )
+    load_model_weights(
+        model.transformer,
+        "experiments/combined/checkpoints/generator_best_1500.pt",
+        "cuda:1",
+    )
 
     trainer = CombinedTrainer(
         train_data_path=config.data.processed.csvs.train,

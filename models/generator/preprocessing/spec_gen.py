@@ -1,6 +1,5 @@
 import io
 import re
-from collections import Counter
 from pathlib import Path
 
 import librosa
@@ -48,16 +47,11 @@ def text_to_spectrogram(word: str, max_length: int = -1) -> tuple:
     return D_real, D_imag
 
 
-def process_words(
-    n_words: int, train_data: pd.DataFrame, max_length: int
-) -> pd.DataFrame:
+def process_words(train_data: pd.DataFrame, max_length: int) -> pd.DataFrame:
     rows = []
+    words = train_data.Gloss.unique()
 
-    freq = dict(Counter(train_data.Gloss.to_list()))
-    words = sorted(freq, key=lambda x: -freq[x])
-
-    for count in range(min(n_words, len(words))):
-        word = words[count].title()
+    for word in words:
         D_real, D_imag = text_to_spectrogram(word, max_length)
 
         features = []
@@ -66,14 +60,14 @@ def process_words(
                 features.append(D_real[j, i])
                 features.append(D_imag[j, i])
 
-        rows.append([words[count]] + features)
+        rows.append([word] + features)
 
     # Calculate the number of features (2x since we have real and imaginary parts)
     num_features = 2 * 1025 * max_length
 
     data = pd.DataFrame(
         rows,
-        columns=["word"] + [f"feature_{i}" for i in range(1, num_features + 1)],
+        columns=["Gloss"] + [f"feature_{i}" for i in range(1, num_features + 1)],
     )
 
     return data
@@ -82,30 +76,20 @@ def process_words(
 def main(
     train_data_path: str,
     specs_path: Path,
-    classlist_path: Path,
-    n_words: int,
     max_length: int,
 ) -> None:
     train_data = pd.read_csv(train_data_path)
-    data = process_words(n_words, train_data, max_length)
+    data = process_words(train_data, max_length)
     data.to_csv(specs_path, index=False)
-    classes = data["word"].tolist()
-    with open(classlist_path, "w") as f:
-        f.write("\n".join(classes))
 
 
 if __name__ == "__main__":
     config = load_config("Generate spectrograms for words")
 
-    checkpoint_path = create_path(config.generator.checkpoints)
-
     specs_path = create_path(config.data.processed.specs)
-    classlist_path = create_path(config.data.processed.classlist)
 
     main(
         config.data.raw.csvs.train,
         specs_path,
-        classlist_path,
-        config.n_words,
         config.generator.max_length,
     )
