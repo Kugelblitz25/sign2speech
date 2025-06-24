@@ -38,6 +38,7 @@ class BackgroundRemover:
         bg_frame[:] = (0, 0, 0)
 
         output_frame = np.where(condition, frame, bg_frame)
+        output_frame = cv2.cvtColor(output_frame, cv2.COLOR_RGB2BGR)
         return output_frame
 
 
@@ -98,7 +99,7 @@ class MotionDetector:
         # start_idx = max(0, min(high_motion_indices) - 5)
         # end_idx = min(len(motion_scores) - 1, max(high_motion_indices) + 5)
 
-        return 0, len(motion_scores) - 1
+        return 0, len(motion_scores) - 1 # start_idx, end_idx
 
 
 bg_remover = BackgroundRemover()
@@ -119,8 +120,8 @@ def preprocess_video_frames(video_frames: torch.Tensor) -> torch.Tensor:
     processed_frames = []
     for i in range(start_idx, end_idx + 1):
         if i < len(frames_list):
-            frame_no_bg = bg_remover.remove_background(frames_list[i])
-            frame_rgb = cv2.cvtColor(frame_no_bg, cv2.COLOR_BGR2RGB)
+            # frame_no_bg = bg_remover.remove_background(frames_list[i])
+            frame_rgb = cv2.cvtColor(frames_list[i], cv2.COLOR_BGR2RGB)
             frame_tensor = torch.from_numpy(frame_rgb).permute(2, 0, 1).float()
             processed_frames.append(frame_tensor)
 

@@ -69,5 +69,5 @@ pipeline: # To use for complete pipeline
     hop_length: 5
     overlap: 5
     threshold: 0.7
-  extractor_weights: experiments/combined/checkpoints/extractor_best.pt
-  transformer_weights: experiments/combined/checkpoints/generator_best.pt
+  extractor_weights: models/checkpoints/extractor_best.pt
+  transformer_weights: models/checkpoints/transformer_best.pt
