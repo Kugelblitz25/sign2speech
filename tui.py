@@ -7,7 +7,7 @@ from typing import Any
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import NestedCompleter
 from prompt_toolkit.formatted_text import HTML
-from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.history import FileHistory
 from rich.console import Console
 from rich.prompt import Confirm
 
@@ -66,7 +66,7 @@ class REPL:
         self.context = [sign2speech]
         self.console = Console()
         self.session = PromptSession(
-            history=InMemoryHistory(),
+            history=FileHistory(".tui_history"),
             completer=NestedCompleter.from_nested_dict(self.commands),
         )
         self.env = os.environ.copy()

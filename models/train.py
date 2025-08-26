@@ -17,10 +17,10 @@ from utils.model import EarlyStopping, load_model_weights, save_model
 logger = get_logger("logs/combined_training.log")
 
 
-def loss(true_label, logits, true_spec, pred_spec, spec_weight=2):
-    ce_loss = F.cross_entropy(logits, true_label)
+def loss(true_label, logits, true_spec, pred_spec, spec_weight=0.9):
+    ce_loss = F.cross_entropy(logits, true_label, label_smoothing=0.1)
     spec_loss = complex_loss(true_spec, pred_spec)
-    return ce_loss + spec_weight * spec_loss
+    return (1 - spec_weight) * ce_loss + spec_weight * spec_loss
 
 
 class Optimizer:
@@ -31,7 +31,7 @@ class Optimizer:
         extractor_cfg: dict,
         transformer_cfg: dict,
     ):
-        self.extractor_optimizer = optim.SGD(extractor_params, **extractor_cfg)
+        self.extractor_optimizer = optim.AdamW(extractor_params, **extractor_cfg)
         self.transformer_optimizer = optim.Adam(transformer_params, **transformer_cfg)
 
     def step(self):
@@ -177,7 +177,7 @@ class Trainer:
 
         extractor_optim_cfg = {
             "lr": extractor_cfg.lr,
-            "momentum": extractor_cfg.momentum,
+            "betas": (0.9, 0.999),
             "weight_decay": extractor_cfg.weight_decay,
         }
 
