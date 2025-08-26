@@ -110,11 +110,12 @@ class Tester:
         model: SpectrogramGenerator,
         audio_generator: AudioGenerator,
         output_dir: str,
+        device: torch.device,
         batch_size: int = 64,
         num_workers: int = 4,
         num_samples_to_save: int = 10,
     ) -> None:
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         self.output_dir = create_path(output_dir)
         self.samples_dir = create_path(self.output_dir / "audio_samples")
 
@@ -125,7 +126,7 @@ class Tester:
         logger.debug(f"Using Sample Rate: {self.sr}Hz")
         logger.debug(f"Will save {num_samples_to_save} random audio samples")
 
-        self.model = model.to(self.device)
+        self.model = model
         self.model.eval()  # Set model to evaluation mode
         self.audio_generator = audio_generator
         self.test_loader = self.get_dataloader(
@@ -320,14 +321,28 @@ class Tester:
 
 
 if __name__ == "__main__":
-    config = load_config("Testing spectrogram generator")
+    config = load_config(
+        "Testing spectrogram generator",
+        output_path={
+            "type": str,
+            "default": "models/transformer/test_results",
+            "help": "Path to save test results",
+        },
+        model_weights={
+            "type": str,
+            "default": "models/checkpoints/transformer_best.pt",
+            "help": "Path to the model weights for testing",
+        },
+    )
 
-    model = SpectrogramGenerator(spec_len=100)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    model = SpectrogramGenerator(spec_len=config.generator.max_length).to(device)
 
     load_model_weights(
         model,
-        "experiments/combined/checkpoints/generator_best.pt",
-        torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        config.model_weights,
+        device,
     )
 
     audio_generator = AudioGenerator()
@@ -337,7 +352,8 @@ if __name__ == "__main__":
         config.data.processed.specs,
         model,
         audio_generator,
-        "experiments/audio_test",
+        config.output_path,
+        device,
         batch_size=32,
         num_samples_to_save=10,
     )

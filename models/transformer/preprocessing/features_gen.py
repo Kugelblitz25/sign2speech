@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
 from models.extractor.model import Extractor
-from utils.common import create_path, get_logger
+from utils.common import create_path, create_subset, get_logger
 from utils.config import Splits, load_config
 from utils.model import load_model_weights
 
@@ -26,15 +26,13 @@ def extract_features(model: Extractor, dataloader: DataLoader, save_path: Path) 
         ):
             inputs, labels = inputs.to(device), labels.to(device)
             features, logits = model(inputs)
-
-            # Convert logits to probabilities using softmax
             probabilities = F.softmax(logits, dim=1)
-
-            # Get predictions from probabilities
             _, predictions = torch.max(probabilities, 1)
-
-            # Only keep features where predictions match labels
-            correct_indices = (predictions == predictions).cpu().numpy()
+            correct_indices = (
+                (predictions == predictions).cpu().numpy()
+            )  # currently always True
+            # to keep only correct predictions, you might want to compare with labels:
+            # correct_indices = (predictions == labels).cpu().numpy()
 
             if any(correct_indices):
                 features_np = features.cpu().numpy()
@@ -87,8 +85,8 @@ def main(
     video_root: str,
     weights: str,
     save_path: Splits,
+    device: torch.device,
 ) -> None:
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.debug(f"Using Device: {device}")
     model = Extractor(num_words).to(device)
     load_model_weights(model, weights, device)
@@ -103,11 +101,28 @@ def main(
 
 
 if __name__ == "__main__":
-    config = load_config("Feature Generation for Spectrogram Generation")
+    config = load_config(
+        "Feature Generation for Spectrogram Generation",
+        model_weights={
+            "type": str,
+            "default": "models/checkpoints/extractor_best.pt",
+            "help": "Path to the model weights file",
+        },
+    )
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    subsets = Splits(
+        train=create_subset(config.data.processed.csvs.train, config.n_words),
+        val=create_subset(config.data.processed.csvs.val, config.n_words),
+        test=create_subset(config.data.processed.csvs.test, config.n_words),
+    )
+
     main(
-        config.data.processed.csvs,
+        subsets,
         config.n_words,
         config.data.processed.videos,
-        "experiments/combined/checkpoints/extractor_best.pt",
+        config.model_weights,
         config.data.processed.vid_features,
+        device,
     )

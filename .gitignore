@@ -7,3 +7,4 @@ __pycache__
 *.pt
 experiments/audio_test/audio_samples/*
 uv.lock
+experiments/audio_test/*

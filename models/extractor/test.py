@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
 from models.extractor.model import Extractor
-from utils.common import create_path, get_logger
+from utils.common import create_path, create_subset, get_logger
 from utils.config import load_config
 from utils.model import load_model_weights
 
@@ -20,27 +20,27 @@ class Tester:
     def __init__(
         self,
         model: Extractor,
-        test_data_path: str,
-        video_root: str,
+        test_data_path: str | Path,
+        video_root: str | Path,
+        device: torch.device,
         batch_size: int = 16,
         num_workers: int = 4,
     ) -> None:
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         logger.debug(f"Using Device: {self.device}")
 
-        self.model = model.to(self.device)
-        self.test_data = pd.read_csv(test_data_path)
+        self.model = model
         self.video_root = video_root
         self.batch_size = batch_size
         self.num_workers = num_workers
 
-        self.test_loader = self._get_dataloader()
+        self.test_loader = self.get_dataloader(test_data_path, video_root)
 
-    def _get_dataloader(self) -> DataLoader:
-        dataset = WLASLDataset(self.test_data, self.video_root)
+    def get_dataloader(self, data_path, video_root) -> DataLoader:
+        dataset = WLASLDataset(data_path, video_root)
         dataloader = DataLoader(
             dataset,
-            batch_size=self.batch_size,
+            batch_size=self.batch_size * 2,
             shuffle=False,
             num_workers=self.num_workers,
         )
@@ -58,10 +58,7 @@ class Tester:
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 _, outputs = self.model(inputs)
 
-                # Get top-1 predictions
                 _, top1_preds = torch.max(outputs, 1)
-
-                # Get top-5 predictions
                 _, top5_preds = torch.topk(outputs, 5, dim=1)
 
                 all_labels.extend(labels.cpu().numpy())
@@ -72,7 +69,7 @@ class Tester:
         all_labels = np.array(all_labels)
         all_predictions = np.array(all_predictions)
         all_top5_predictions = np.array(all_top5_predictions)
-        class_names = sorted(self.test_data.Gloss.unique().tolist())
+        class_names = sorted(self.test_loader.dataset.classes)
 
         # Calculate metrics
         results = {}
@@ -122,16 +119,12 @@ class Tester:
         logger.info(f"Top-5 Accuracy: {results['top5_accuracy']:.2f}%")
         logger.info(f"Weighted F1-Score: {results['f1_weighted']:.4f}")
 
-        # Print per-class metrics if needed
-        # Note: This could be large depending on the number of classes
         logger.info("Per-class metrics available in results['classification_report']")
 
         # Save results to CSV
         results_df = pd.DataFrame(
             {
-                "Class": list(results["classification_report"].keys())[
-                    :-3
-                ],  # Exclude 'accuracy', 'macro avg', 'weighted avg'
+                "Class": list(results["classification_report"].keys())[:-3],
                 "Precision": [
                     results["classification_report"][c]["precision"]
                     for c in list(results["classification_report"].keys())[:-3]
@@ -173,31 +166,42 @@ class Tester:
 
 
 if __name__ == "__main__":
-    config = load_config("Test video classification model")
+    config = load_config(
+        "Test video classification model",
+        output_path={
+            "type": str,
+            "default": "models/extractor/test_results",
+            "help": "Path to save test results",
+        },
+        model_weights={
+            "type": str,
+            "default": "models/checkpoints/extractor_best.pt",
+            "help": "Path to the model weights for testing",
+        },
+    )
 
-    output_path = create_path("experiments/test_extractor/")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+
+    output_path = create_path(config.output_path)
+
+    test_data = create_subset(config.data.processed.csvs.test, config.n_words)
 
     model = Extractor(
         num_classes=config.n_words,
         base_model=config.extractor.model,
         n_freeze=config.extractor.training.freeze,
-    )
+    ).to(device)
 
-    load_model_weights(
-        model,
-        "experiments/combined/checkpoints/extractor_best.pt",
-        torch.device("cuda"),
-    )
+    load_model_weights(model, config.model_weights, device)
 
     tester = Tester(
         model=model,
-        test_data_path=config.data.processed.csvs.test,
+        test_data_path=test_data,
         video_root=config.data.processed.videos,
-        batch_size=config.extractor.training.batch_size,
+        batch_size=config.extractor.training.batch_size * 2,
         num_workers=config.extractor.training.num_workers,
+        device=device,
     )
 
     results = tester.evaluate()
-    tester.print_results(
-        results, create_path(Path(config.extractor.checkpoints) / "test_results")
-    )
+    tester.print_results(results, output_path)
