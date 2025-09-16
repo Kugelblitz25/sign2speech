@@ -207,7 +207,7 @@ class Trainer:
             self.optimizer, extractor_scheduler_cfg, transformer_scheduler_cfg
         )
 
-        early_stopping = EarlyStopping(patience=self.train_cfg.patience, verbose=True)
+        early_stopping = EarlyStopping(patience=extractor_cfg.patience, verbose=True)
 
         logger.info("Starting training...")
 
