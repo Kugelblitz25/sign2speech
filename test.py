@@ -180,4 +180,4 @@ def main(csv_file, n, k, video_base_dir):
 
 
 if __name__ == "__main__":
-    main("data/wlasl/raw/test.csv", 100, 10, "data/wlasl/raw/videos")
+    main("data/asl-citizen/raw/test_10.csv", 100, 10, "data/asl-citizen/raw/videos")

@@ -93,7 +93,8 @@ def main(
 
     for split in ["train", "test", "val"]:
         csv_path = getattr(data_path, split)
-        dataset = WLASLDataset(csv_path, video_root)
+        data = pd.read_csv(csv_path)
+        dataset = WLASLDataset(data, video_root)
         dataloader = DataLoader(dataset, batch_size=4, shuffle=False, num_workers=4)
         output_path = create_path(getattr(save_path, split))
         extract_features(model, dataloader, output_path)

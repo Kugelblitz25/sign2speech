@@ -33,7 +33,10 @@ extractor = Module(
     name="extractor",
     train="models/extractor/train.py",
     test="models/extractor/test.py",
-    preprocessing=list_files("models/extractor/preprocessing"),
+    preprocessing={
+        "verify": "models/extractor/preprocessing/verify.py",
+        "augment": "models/extractor/preprocessing/augmentation.py",
+    },
     edit=list_files("models/extractor"),
 )
 
@@ -41,7 +44,9 @@ transformer = Module(
     name="transformer",
     train="models/transformer/train.py",
     test="models/transformer/test.py",
-    preprocessing=list_files("models/transformer/preprocessing"),
+    preprocessing={
+        "feature_gen": "models/transformer/preprocessing/feature_gen.py",
+    },
     edit=list_files("models/transformer"),
 )
 
@@ -112,11 +117,11 @@ class REPL:
             return []
         return ["uv", "run", self.context[-1].train]
 
-    def handle_test(self, args) -> list[str]:
+    def handle_test(self) -> list[str]:
         if not self.context[-1].test:
             self.console.print("No test script found.", style="red")
             return []
-        return ["uv", "run", self.context[-1].test] + args
+        return ["uv", "run", self.context[-1].test]
 
     def handle_preprocess(self, args: list[str]) -> list[str]:
         if len(args) == 0:
@@ -193,7 +198,7 @@ class REPL:
             return command_str
 
         if command == "test":
-            command_str = self.handle_test(args)
+            command_str = self.handle_test()
             if not self.conf_command(command_str):
                 return []
             return command_str
