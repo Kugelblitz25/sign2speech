@@ -1,7 +1,7 @@
-import matplotlib.pyplot as plt
+from collections import deque
+
 import numpy as np
 import torch
-from tqdm import tqdm
 
 from models.extractor import FeatureExtractor
 from utils.config import NMSConfig
@@ -10,95 +10,62 @@ from utils.config import NMSConfig
 class NMS:
     def __init__(self, extractor: FeatureExtractor, config: NMSConfig) -> None:
         self.extractor = extractor
-        self.hop_length = config.hop_length
         self.win_size = config.win_size
         self.overlap = config.overlap
         self.threshold = config.threshold
+        self.hop_length = config.hop_length
 
-    def predict(
-        self, frames: list[np.ndarray]
-    ) -> dict[int, tuple[torch.tensor, float]]:
-        features = {}
-        for i in tqdm(
-            range(0, len(frames) - self.win_size // 2 + 1, self.hop_length),
-            "Getting Features",
-        ):
-            ft, conf = self.extractor(frames[i : i + self.win_size])
-            features[i] = (ft, conf)
-        return features
+        self.window = deque(maxlen=self.win_size)
+        self.window_index = None
+        self.best_window_idx = None
+        self.best_feature = None
+        self.best_confidence = 0.0
 
-    def __call__(
-        self, frames: list[np.ndarray], plot_path="probs.png"
-    ) -> dict[int, torch.Tensor]:
-        features = self.predict(frames)
-        lambda_ = 0.0
+    def __call__(self, frame: np.ndarray) -> tuple[int, torch.Tensor | None]:
+        self.window.append(frame)
+        if len(self.window) < self.win_size:
+            return -1, None
 
-        # All frame indices and their confidences for plotting
-        all_indices = sorted(features.keys())
-        all_confidences = [features[idx][1] for idx in all_indices]
-        frame_idxs = []
-        for i in range(1, len(all_confidences)):
-            all_confidences[i] = min(
-                1, lambda_ * all_confidences[i - 1] + all_confidences[i]
-            )
-            if all_confidences[i] >= self.threshold:
-                frame_idxs.append((all_confidences[i], -all_indices[i]))
+        if self.window_index is None and len(self.window) == self.win_size:
+            feature, confidence = self.extractor(list(self.window))
+            self.window_index = 0
+            if confidence >= self.threshold:
+                self.best_window_idx = 0
+                self.best_feature = feature
+                self.best_confidence = confidence
+            return -1, None
 
-        # Get high confidence frames
-        frame_idxs = sorted(frame_idxs)
+        self.window_index += 1
+        if not self.window_index % self.hop_length == 0:
+            return -1, None
 
-        good_preds = []
-        with tqdm(total=len(frame_idxs), desc="Applying NMS") as pbar:
-            while len(frame_idxs) > 0:
-                before = len(frame_idxs)
-                _, frame_idx = frame_idxs.pop()
-                frame_idx *= -1
-                good_preds.append(frame_idx)
-                frame_idxs = [
-                    (prob, idx)
-                    for prob, idx in frame_idxs
-                    if abs(-1 * idx - frame_idx) > self.win_size - self.overlap
-                ]
-                pbar.update(before - len(frame_idxs))
+        feature, confidence = self.extractor(list(self.window))
 
-        # Create the plot
-        self.plot_probabilities(all_indices, all_confidences, good_preds, plot_path)
+        if self.best_window_idx is None and confidence > self.threshold:
+            self.best_window_idx = self.window_index
+            self.best_feature = feature
+            self.best_confidence = confidence
+            return -1, None
 
-        return {idx: features[idx][0] for idx in good_preds}
+        if self.best_window_idx is None:
+            return -1, None
 
-    def plot_probabilities(self, indices, confidences, selected_indices, plot_path):
-        plt.figure(figsize=(12, 6))
+        if (self.window_index - self.best_window_idx) > (self.win_size - self.overlap):
+            return_index = self.best_window_idx
+            return_feature = self.best_feature
+            if confidence > self.threshold:
+                self.best_window_idx = self.window_index
+                self.best_feature = feature
+                self.best_confidence = confidence
+            else:
+                self.best_window_idx = None
+                self.best_feature = None
+                self.best_confidence = 0.0
+            return return_index, return_feature
 
-        # Plot all probabilities
-        plt.plot(indices, confidences, "b-", alpha=0.5, label="All Windows")
+        if confidence > self.best_confidence:
+            self.best_window_idx = self.window_index
+            self.best_feature = feature
+            self.best_confidence = confidence
 
-        # Highlight selected windows
-        plt.scatter(
-            selected_indices,
-            [confidences[indices.index(idx)] for idx in selected_indices],
-            color="red",
-            s=50,
-            label="Selected Windows",
-        )
-
-        # Add threshold line
-        plt.axhline(
-            y=self.threshold,
-            color="green",
-            linestyle="--",
-            label=f"Threshold ({self.threshold})",
-        )
-
-        # Add window regions
-        for idx in selected_indices:
-            plt.axvspan(idx, idx + self.win_size, alpha=0.2, color="lightgreen")
-
-        plt.xlabel("Frame Index")
-        plt.ylabel("Confidence Score")
-        plt.title("NMS Window Selection")
-        plt.legend()
-        plt.grid(True, alpha=0.3)
-
-        # Save the plot
-        plt.savefig(plot_path, dpi=300, bbox_inches="tight")
-        plt.close()
+        return -1, None

@@ -207,7 +207,7 @@ class Trainer:
             self.optimizer, extractor_scheduler_cfg, transformer_scheduler_cfg
         )
 
-        early_stopping = EarlyStopping(patience=extractor_cfg.patience, verbose=True)
+        early_stopping = EarlyStopping(patience=self.train_cfg.patience, verbose=True)
 
         logger.info("Starting training...")
 
@@ -274,6 +274,11 @@ if __name__ == "__main__":
             "default": None,
             "help": "Path to the transformer weights for fine-tuning",
         },
+        use_pretrained_base={
+            "type": bool,
+            "default": False,
+            "help": "Whether the extractor weights given is for the base model only",
+        }
     )
 
     device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
@@ -289,7 +294,10 @@ if __name__ == "__main__":
     ).to(device)
 
     if config.extractor_weights_path:
-        load_model_weights(model.extractor, config.extractor_weights_path, device)
+        if config.use_pretrained_base:
+            load_model_weights(model.extractor.base, config.extractor_weights_path, device)
+        else:
+            load_model_weights(model.extractor, config.extractor_weights_path, device)
 
     if config.transformer_weights_path:
         load_model_weights(model.transformer, config.transformer_weights_path, device)

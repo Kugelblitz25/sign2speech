@@ -11,17 +11,13 @@ import soundfile as sf
 import whisper
 from jiwer import cer, wer
 from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
+from tqdm import tqdm
 
 from models import Sign2Speech
 from utils.config import load_config
 
 # Load model
 config = load_config("Generate Audio")
-model = Sign2Speech(
-    num_words=config.n_words,
-    spec_len=config.generator.max_length,
-    config=config.pipeline,
-)
 asr_model = whisper.load_model("medium")  # or "tiny", "small", etc.
 
 
@@ -60,10 +56,34 @@ def concatenate_videos(video_paths, output_path):
     return True
 
 
-def predict(video_path: str, temp_dir: str) -> str:
+def predict(file: str, temp_dir: str):
+    video = cv2.VideoCapture(file)
+    model = Sign2Speech(
+        num_words=config.n_words,
+        spec_len=config.generator.max_length,
+        config=config.pipeline,
+    )
+
+    audio_complete = np.zeros((0,))
+
+    total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
+    with tqdm(total=total_frames, desc="Processing frames") as pbar:
+        while True:
+            ret, frame = video.read()
+            if not ret:
+                break
+            ret, audio = model.process_frame(frame)
+            if ret:
+                audio_complete = np.concatenate((audio_complete, audio))
+            pbar.update(1)
+
+    ret, audio = model.close_stream()
+    if ret:
+        audio_complete = np.concatenate((audio_complete, audio))
+    video.release()
+
     audio_path = os.path.join(temp_dir, "temp_audio.wav")
-    audio = model(str(video_path))
-    sf.write(audio_path, audio, 24000)
+    sf.write(audio_path, audio_complete, 24000)
     return audio_path
 
 
@@ -149,18 +169,18 @@ def main(csv_file, n, k, video_base_dir):
                 t1 = time.time()
                 audio_path = predict(concat_video_path, temp_dir)
                 t2 = time.time()
-
-                hypothesis = transcribe_audio(audio_path)
-                metrics = evaluate(combined_gloss, hypothesis)
-
-                all_metrics.append(metrics)
-
-                print(f"Processing completed in {t2 - t1:.2f}s")
-                print(f"Reference:  {combined_gloss}")
-                print(f"Hypothesis: {hypothesis}")
-                print(f"Metrics: {metrics}")
             except Exception as e:
                 print(f"Error processing concatenated video: {e}")
+
+            hypothesis = transcribe_audio(audio_path)
+            metrics = evaluate(combined_gloss, hypothesis)
+
+            all_metrics.append(metrics)
+
+            print(f"Processing completed in {t2 - t1:.2f}s")
+            print(f"Reference:  {combined_gloss}")
+            print(f"Hypothesis: {hypothesis}")
+            print(f"Metrics: {metrics}")
 
     if all_metrics:
         avg_metrics = {
