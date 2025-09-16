@@ -7,4 +7,3 @@ __pycache__
 *.pt
 uv.lock
 test_results
-.tui_history

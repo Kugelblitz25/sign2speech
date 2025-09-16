@@ -33,45 +33,24 @@ class BaseExtractor(nn.Module):
         return self.model(x).permute(0, 2, 3, 4, 1)
 
 
-# class Extractor(nn.Module):
-#     def __init__(
-#         self, num_classes: int = 2000, base_model: str = "i3d", n_freeze: int = 0
-#     ) -> None:
-#         super().__init__()
-#         self.base = BaseExtractor(model=base_model, n_freeze=n_freeze)
-
-#         self.classifier = nn.Sequential(
-#             nn.Dropout(0.5, inplace=True),
-#             nn.Linear(self.base.output_dim, num_classes, bias=True),
-#             nn.ReLU(inplace=True),
-#         )
-#         self.flatten = nn.Sequential(
-#             nn.AdaptiveAvgPool3d(1),
-#             nn.Flatten(),
-#         )
-
-#     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-#         features = self.base(x)
-#         output = self.classifier(features).permute(0, 4, 1, 2, 3)
-#         return self.flatten(features.permute(0, 4, 1, 2, 3)), self.flatten(output)
-
 class Extractor(nn.Module):
-    def __init__(self, num_classes=100, base_model="i3d", n_freeze=0):
+    def __init__(
+        self, num_classes: int = 2000, base_model: str = "i3d", n_freeze: int = 0
+    ) -> None:
         super().__init__()
         self.base = BaseExtractor(model=base_model, n_freeze=n_freeze)
-        
-        # Better classifier with more regularization
+
         self.classifier = nn.Sequential(
-            nn.Dropout(0.5),
-            nn.Linear(self.base.output_dim, 512),
+            nn.Dropout(0.5, inplace=True),
+            nn.Linear(self.base.output_dim, num_classes, bias=True),
             nn.ReLU(inplace=True),
-            nn.BatchNorm1d(512),
-            nn.Dropout(0.4),
-            nn.Linear(512, num_classes)
         )
-    
-    def forward(self, x):
+        self.flatten = nn.Sequential(
+            nn.AdaptiveAvgPool3d(1),
+            nn.Flatten(),
+        )
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         features = self.base(x)
-        pooled_features = torch.mean(features, dim=(1, 2, 3))  # B, C
-        output = self.classifier(pooled_features)
-        return pooled_features, output
+        output = self.classifier(features).permute(0, 4, 1, 2, 3)
+        return self.flatten(features.permute(0, 4, 1, 2, 3)), self.flatten(output)
