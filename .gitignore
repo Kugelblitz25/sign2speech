@@ -6,3 +6,6 @@ __pycache__
 *.pth
 *.pt
 uv.lock
+
+test_results
+.tui_history
