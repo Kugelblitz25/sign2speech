@@ -66,7 +66,6 @@ class TransformerTraining(Training):
 
 @dataclass
 class Transformer:
-    extractor_weights: str
     checkpoints: str
     training: TransformerTraining
 
@@ -193,7 +192,6 @@ def load_config(desc: str, **kwargs) -> Config:
     )
 
     transformer = Transformer(
-        extractor_weights=config_dict["transformer"]["extractor_weights"],
         checkpoints=config_dict["transformer"]["checkpoints"],
         training=transformer_training,
     )
