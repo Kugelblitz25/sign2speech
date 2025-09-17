@@ -25,6 +25,9 @@ dependencies = [
 pytorchvideo = { git = "https://github.com/facebookresearch/pytorchvideo" }
 
 [dependency-groups]
+dev = [
+    "telegram-send>=0.37",
+]
 test = [
     "pesq>=0.0.4",
     "pystoi>=0.4.1",

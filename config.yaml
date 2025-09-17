@@ -38,7 +38,6 @@ extractor:
     num_workers: 4
 
 transformer:
-  extractor_weights: models/extractor/checkpoints/full_best_i3d.pt # To create features before training
   checkpoints: models/transformer/checkpoints
   training:
     epochs: 500
@@ -69,5 +68,5 @@ pipeline: # To use for complete pipeline
     hop_length: 5
     overlap: 5
     threshold: 0.7
-  extractor_weights: experiments/combined/checkpoints/extractor_best.pt
-  transformer_weights: experiments/combined/checkpoints/generator_best.pt
+  extractor_weights: models/checkpoints/wlasl_pretrained/extractor_best.pt
+  transformer_weights: models/checkpoints/wlasl_pretrained/transformer_best.pt
