@@ -1,95 +1,24 @@
 import os
-import random
 import re
-import tempfile
 import time
 
-import cv2
 import numpy as np
 import pandas as pd
-import soundfile as sf
 import whisper
 from jiwer import cer, wer
 from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
-from tqdm import tqdm
 
-from models import Sign2Speech
-from utils.common import create_subset
 from utils.config import load_config
+from infer import predict
 
 # Load model
-config = load_config("Generate Audio")
-asr_model = whisper.load_model("large")  # or "tiny", "small", etc.
+config = load_config("Testing...")
+asr_model = whisper.load_model("large")
 
 
-def concatenate_videos(video_paths, output_path):
-    if not video_paths:
-        return False
-
-    # Get information from first video
-    first_video = cv2.VideoCapture(video_paths[0])
-    if not first_video.isOpened():
-        return False
-
-    frame_width = int(first_video.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(first_video.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = first_video.get(cv2.CAP_PROP_FPS)
-    first_video.release()
-
-    # Create VideoWriter object
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    out = cv2.VideoWriter(output_path, fourcc, fps, (frame_width, frame_height))
-
-    # Concatenate videos
-    for video_path in video_paths:
-        cap = cv2.VideoCapture(video_path)
-        if not cap.isOpened():
-            continue
-
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            out.write(frame)
-        cap.release()
-
-    out.release()
-    return True
-
-
-def predict(file: str, temp_dir: str):
-    video = cv2.VideoCapture(file)
-    model = Sign2Speech(
-        num_words=config.n_words,
-        spec_len=config.generator.max_length,
-        config=config.pipeline,
-    )
-
-    audio_complete = np.zeros((0,))
-
-    total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-    with tqdm(total=total_frames, desc="Processing frames") as pbar:
-        while True:
-            ret, frame = video.read()
-            if not ret:
-                break
-            ret, audio = model.process_frame(frame)
-            if ret:
-                audio_complete = np.concatenate((audio_complete, audio))
-            pbar.update(1)
-
-    ret, audio = model.close_stream()
-    if ret:
-        audio_complete = np.concatenate((audio_complete, audio))
-    video.release()
-
-    audio_path = os.path.join(temp_dir, "temp_audio.wav")
-    sf.write(audio_path, audio_complete, 24000)
-    return audio_path
-
-
-def transcribe_audio(audio_path: str) -> str:
-    result = asr_model.transcribe(audio_path, language="en")
+def transcribe_audio(audio: np.ndarray) -> str:
+    audio = audio.astype(np.float32)
+    result = asr_model.transcribe(audio, language="en")
     text = result["text"].strip().lower()
     return re.sub(r"[^\w\s]", "", text)
 
@@ -111,80 +40,45 @@ def evaluate(reference: str, hypothesis: str) -> dict:
     }
 
 
-def main(csv_file, n, k, video_base_dir):
-    # Load and process CSV file
-    df = pd.read_csv(create_subset(csv_file, 100))
-    print(list(df.Gloss.unique()))
-
-    # Check if required columns exist
-    required_columns = ["Participant ID", "Video file", "Gloss"]
-    for col in required_columns:
-        if col not in df.columns:
-            print(f"Error: Required column '{col}' not found in CSV file")
-            return
-
-    # Get all unique participant IDs (we'll select randomly from these each round)
-    all_participant_ids = df["Participant ID"].unique()
-
-    if len(all_participant_ids) == 0:
-        print("Error: No participant IDs found in CSV file")
-        return
+def main(test_videos_dir: str, word_list: list[str]):
+    test_videos = os.listdir(test_videos_dir)
 
     all_metrics = []
+    best_videos = []
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        for round_num in range(n):
-            # Randomly select a participant for this round
-            participant_id = random.choice(all_participant_ids)
-            print(f"\nRound {round_num + 1}/{n}: Selected participant {participant_id}")
-
-            # Get all videos for this participant
-            participant_videos = df[df["Participant ID"] == participant_id]
-
-            if len(participant_videos) < k:
-                print(
-                    f"Warning: Participant {participant_id} only has {len(participant_videos)} videos, using all of them"
-                )
-                selected_videos = participant_videos
-            else:
-                selected_videos = participant_videos.sample(k)
-
-            video_paths = [
-                os.path.join(video_base_dir, row["Video file"])
-                for _, row in selected_videos.iterrows()
-            ]
-            words = selected_videos["Gloss"].tolist()
-            words = [word.lower() for word in words]
-            combined_gloss = " ".join(words)
-
-            # Concatenate videos
-            concat_video_path = os.path.join(
-                temp_dir, f"concat_video_round_{round_num}.mp4"
+    for idx, test_video in enumerate(test_videos):
+        video_path = os.path.join(test_videos_dir, test_video)
+        glosses = test_video.replace(".mp4", "").split("_")[3:]
+        combined_gloss = " ".join(glosses)
+        try:
+            t1 = time.time()
+            audio = predict(
+                video_path,
+                config.n_words,
+                config.generator.max_length,
+                config.pipeline,
             )
-            print(f"Concatenating {len(video_paths)} videos...")
-            success = concatenate_videos(video_paths, concat_video_path)
+            t2 = time.time()
+        except Exception as e:
+            print(f"Error processing concatenated video: {e}")
 
-            if not success:
-                print(f"Error: Failed to concatenate videos for round {round_num + 1}")
-                continue
+        hypothesis = transcribe_audio(audio)
+        metrics = evaluate(combined_gloss, hypothesis)
+        misheard_words = [word for word in hypothesis.split() if word not in word_list]
 
-            # Process the concatenated video
-            try:
-                t1 = time.time()
-                audio_path = predict(concat_video_path, temp_dir)
-                t2 = time.time()
-            except Exception as e:
-                print(f"Error processing concatenated video: {e}")
+        all_metrics.append(metrics)
 
-            hypothesis = transcribe_audio(audio_path)
-            metrics = evaluate(combined_gloss, hypothesis)
+        if len(combined_gloss.split()) > 5 and metrics["WER"] <= 0.3:
+            best_videos.append((test_video, metrics))
 
-            all_metrics.append(metrics)
-
-            print(f"Processing completed in {t2 - t1:.2f}s")
-            print(f"Reference:  {combined_gloss}")
-            print(f"Hypothesis: {hypothesis}")
-            print(f"Metrics: {metrics}")
+        print(
+            f"Processing completed in {t2 - t1:.2f}s (Video {idx + 1}/{len(test_videos)})"
+        )
+        print(f"Reference:  {combined_gloss}")
+        print(f"Hypothesis: {hypothesis}")
+        print(f"Metrics: {metrics}")
+        print(f"No. of misheard words: {len(misheard_words)}")
+        print("-" * 50)
 
     if all_metrics:
         avg_metrics = {
@@ -194,14 +88,21 @@ def main(csv_file, n, k, video_base_dir):
         }
 
         print("\n" + "=" * 50)
-        print(f"Processed {len(all_metrics)}/{n} rounds successfully")
+        print(f"Processed {len(all_metrics)}/{len(test_videos)} rounds successfully")
         print("Average Metrics:")
         print(f"Average WER:  {avg_metrics['WER']:.4f}")
         print(f"Average CER:  {avg_metrics['CER']:.4f}")
         print(f"Average BLEU: {avg_metrics['BLEU']:.4f}")
+        print("=" * 50 + "\n")
+        print("Best Videos (more than 5 words with WER < 0.2):")
+        for video, metrics in best_videos:
+            print(f"{video}: {metrics}")
+
     else:
         print("No videos were processed successfully")
 
 
 if __name__ == "__main__":
-    main("data/wlasl/raw/test.csv", 100, 20, "data/wlasl/raw/videos")
+    test_data = pd.read_csv("data/wlasl/raw/test.csv")
+    word_list = test_data["Gloss"].unique().tolist()
+    main("test_videos", word_list)

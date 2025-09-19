@@ -8,4 +8,6 @@ __pycache__
 uv.lock
 experiments/audio_test/*
 test_results
+test_videos
+outputs
 .tui_history

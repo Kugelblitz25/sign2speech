@@ -56,7 +56,7 @@ generator:
   max_length: 64
 
 combined:
-  checkpoints: models/checkpoints/wlasl_pretrained
+  checkpoints: models/checkpoints/wlasl_pretrained1
   epochs: 500
   batch_size: 3
   patience: 20
