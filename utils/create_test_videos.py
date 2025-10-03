@@ -38,7 +38,7 @@ def main(
     for _ in range(num_videos):
         random_signer = np.random.choice(data["Participant ID"].unique())
         sub_data = data[data["Participant ID"] == random_signer]
-        random_videos = sub_data.sample(wpv, replace=True)
+        random_videos = sub_data.sample(min(wpv, len(sub_data)))
         video_files = random_videos["Video file"].tolist()
         word_list = random_videos["Gloss"].tolist()
         video_array = combine_videos(video_files, video_root)

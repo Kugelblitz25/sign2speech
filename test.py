@@ -9,11 +9,13 @@ from jiwer import cer, wer
 from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
 
 from utils.config import load_config
+from utils.common import get_logger
 from infer import predict
 
 # Load model
 config = load_config("Testing...")
 asr_model = whisper.load_model("large")
+logger = get_logger("logs/testing.log")
 
 
 def transcribe_audio(audio: np.ndarray) -> str:
@@ -49,6 +51,7 @@ def main(test_videos_dir: str, word_list: list[str]):
     for idx, test_video in enumerate(test_videos):
         video_path = os.path.join(test_videos_dir, test_video)
         glosses = test_video.replace(".mp4", "").split("_")[3:]
+        n_words = len(glosses)
         combined_gloss = " ".join(glosses)
         try:
             t1 = time.time()
@@ -60,25 +63,26 @@ def main(test_videos_dir: str, word_list: list[str]):
             )
             t2 = time.time()
         except Exception as e:
-            print(f"Error processing concatenated video: {e}")
+            logger.error(f"Error processing concatenated video: {e}")
 
         hypothesis = transcribe_audio(audio)
         metrics = evaluate(combined_gloss, hypothesis)
-        misheard_words = [word for word in hypothesis.split() if word not in word_list]
+        misheard_words = [word for word in glosses if word not in word_list]
+        metrics["WER"] = max(0, metrics["WER"] - len(misheard_words) / n_words)
 
         all_metrics.append(metrics)
 
-        if len(combined_gloss.split()) > 5 and metrics["WER"] <= 0.3:
+        if len(combined_gloss.split()) >= 3 and metrics["WER"] <= 0.3:
             best_videos.append((test_video, metrics))
 
-        print(
+        logger.info(
             f"Processing completed in {t2 - t1:.2f}s (Video {idx + 1}/{len(test_videos)})"
         )
-        print(f"Reference:  {combined_gloss}")
-        print(f"Hypothesis: {hypothesis}")
-        print(f"Metrics: {metrics}")
-        print(f"No. of misheard words: {len(misheard_words)}")
-        print("-" * 50)
+        logger.info(f"Reference:  {combined_gloss}")
+        logger.info(f"Hypothesis: {hypothesis}")
+        logger.info(f"Metrics: {metrics}")
+        logger.info(f"No. of misheard words: {len(misheard_words)}")
+        logger.info("-" * 50)
 
     if all_metrics:
         avg_metrics = {
@@ -87,22 +91,24 @@ def main(test_videos_dir: str, word_list: list[str]):
             "BLEU": np.mean([m["BLEU"] for m in all_metrics]),
         }
 
-        print("\n" + "=" * 50)
-        print(f"Processed {len(all_metrics)}/{len(test_videos)} rounds successfully")
-        print("Average Metrics:")
-        print(f"Average WER:  {avg_metrics['WER']:.4f}")
-        print(f"Average CER:  {avg_metrics['CER']:.4f}")
-        print(f"Average BLEU: {avg_metrics['BLEU']:.4f}")
-        print("=" * 50 + "\n")
-        print("Best Videos (more than 5 words with WER < 0.2):")
+        logger.info("\n" + "=" * 50)
+        logger.info(
+            f"Processed {len(all_metrics)}/{len(test_videos)} rounds successfully"
+        )
+        logger.info("Average Metrics:")
+        logger.info(f"Average WER:  {avg_metrics['WER']:.4f}")
+        logger.info(f"Average CER:  {avg_metrics['CER']:.4f}")
+        logger.info(f"Average BLEU: {avg_metrics['BLEU']:.4f}")
+        logger.info("=" * 50 + "\n")
+        logger.info("Best Videos (more than 5 words with WER < 0.2):")
         for video, metrics in best_videos:
-            print(f"{video}: {metrics}")
+            logger.info(f"{video}: {metrics}")
 
     else:
-        print("No videos were processed successfully")
+        logger.error("No videos were processed successfully")
 
 
 if __name__ == "__main__":
-    test_data = pd.read_csv("data/wlasl/raw/test.csv")
+    test_data = pd.read_csv("data/asl-citizen/raw/test.csv")
     word_list = test_data["Gloss"].unique().tolist()
     main("test_videos", word_list)

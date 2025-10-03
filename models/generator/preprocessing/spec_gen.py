@@ -8,7 +8,7 @@ import pandas as pd
 import soundfile as sf
 from gtts import gTTS
 
-from utils.common import create_path, get_logger
+from utils.common import create_path, get_logger, create_subset
 from utils.config import load_config
 
 logger = get_logger("logs/spectrogram_generation.log")
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     specs_path = create_path(config.data.processed.specs)
 
     main(
-        config.data.raw.csvs.train,
+        create_subset(config.data.raw.csvs.train, config.n_words),
         specs_path,
         config.generator.max_length,
     )

@@ -78,7 +78,7 @@ def augment_dataset(
 
         if "bbox" in item.index and pd.notna(item["bbox"]):
             x1, y1, x2, y2 = map(int, item["bbox"].strip("[]").split(","))
-            video_frames = video_frames[:, :, x1:x2, y1:y2]
+            # video_frames = video_frames[:, :, x1:x2, y1:y2]
 
         if (
             "frame_start" in item.index
@@ -88,7 +88,7 @@ def augment_dataset(
         ):
             frame_start = int(item["frame_start"])
             frame_end = int(item["frame_end"])
-            video_frames = video_frames[:, frame_start:frame_end, :, :]
+            # video_frames = video_frames[:, frame_start:frame_end, :, :]
 
         try:
             for i in range(num_augmentations):

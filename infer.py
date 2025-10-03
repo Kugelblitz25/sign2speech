@@ -1,10 +1,14 @@
+import traceback
+
 import numpy as np
 from tqdm import tqdm
 from models import Sign2Speech
 import soundfile as sf
 
 from utils.config import load_config, PipelineConfig
-from utils.common import create_path, Video, source
+from utils.common import create_path, Video, source, get_logger
+
+logger = get_logger("logs/inference.log")
 
 
 def predict(
@@ -19,23 +23,32 @@ def predict(
 
     total_frames = video.n_frames
     audio_length_per_frame = 24000 // video.fps
-    total_audio_length = (total_frames + config.nms.win_size) * audio_length_per_frame
-    audio_complete = np.zeros((total_audio_length,))
+    # total_audio_length = (total_frames + config.nms.win_size) * audio_length_per_frame
+    audio_complete = np.zeros((0,))
     idx = 0
-    with tqdm(total=total_frames, desc="Processing frames") as pbar:
-        for frame in video:
-            ret, audio = model.process_frame(frame)
-            if ret:
-                audio_idx = idx * audio_length_per_frame
-                audio_complete[audio_idx : audio_idx + len(audio)] += audio
-            idx += 1
-            pbar.update(1)
 
-    ret, audio = model.close_stream()
-    audio_idx = idx * audio_length_per_frame
-    if ret:
-        audio_complete[audio_idx : audio_idx + len(audio)] += audio
-    video.release()
+    try:
+        with tqdm(total=total_frames, desc="Processing frames") as pbar:
+            for frame in video:
+                ret, audio = model.process_frame(frame)
+                if ret:
+                    # audio_idx = idx * audio_length_per_frame
+                    # audio_complete[audio_idx : audio_idx + len(audio)] += audio
+                    audio_complete = np.concatenate((audio_complete, audio))
+                idx += 1
+                pbar.update(1)
+
+        ret, audio = model.close_stream()
+        # print(audio_idx, len(audio_complete), len(audio))
+        if ret:
+            # audio_idx = idx * audio_length_per_frame
+            # audio_complete[audio_idx : audio_idx + len(audio)] += audio
+            audio_complete = np.concatenate((audio_complete, audio))
+        video.release()
+    except Exception as e:
+        logger.error(f"Error processing frame {idx}: {e}")
+        traceback.print_exc()
+        raise e
     return audio_complete
 
 
