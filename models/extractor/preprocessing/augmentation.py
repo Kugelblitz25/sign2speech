@@ -71,23 +71,26 @@ def augment_dataset(
         item = data.iloc[row]
         video_path = video_root / item["Video file"]
 
+        # Load original video
+        video = EncodedVideo.from_path(video_path)
+        video_data = video.get_clip(start_sec=0, end_sec=video.duration)
+        video_frames = video_data["video"]
+
+        if "bbox" in item.index and pd.notna(item["bbox"]):
+            x1, y1, x2, y2 = map(int, item["bbox"].strip("[]").split(","))
+            # video_frames = video_frames[:, :, x1:x2, y1:y2]
+
+        if (
+            "frame_start" in item.index
+            and pd.notna(item["frame_start"])
+            and "frame_end" in item.index
+            and pd.notna(item["frame_end"])
+        ):
+            frame_start = int(item["frame_start"])
+            frame_end = int(item["frame_end"])
+            # video_frames = video_frames[:, frame_start:frame_end, :, :]
+
         try:
-            # Load original video
-            video = EncodedVideo.from_path(video_path)
-            video_data = video.get_clip(start_sec=0, end_sec=video.duration)
-            video_frames = video_data["video"]
-
-            # Process original frames
-            # processed_frames = []
-            # x1, y1, x2, y2 = item["bbox"]
-            # w, h = video_frames.shape[2], video_frames.shape[3]
-            # x1, x2 = max(0, x1 - 50), min(h, x2 + 50)
-            # y1, y2 = max(0, y1 - 50), min(w, y2 + 50)
-            # for i in range(video_frames.shape[1]):
-            #     frame = video_frames[:, i, :, :]  # y1:y2, x1:x2]
-            #     processed_frames.append(frame)
-
-            # Generate augmented versions
             for i in range(num_augmentations):
                 augmented_frames = apply_augmentation(video_frames.to(device))
                 video_file = item["Video file"]

@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
-from utils.common import create_path, get_logger
+from utils.common import create_path, get_logger, create_subset
 from utils.config import Splits, load_config
 
 logger = get_logger("logs/video_verify.log")
@@ -33,14 +33,16 @@ def verify_videos(datafile_path: str, video_root: str) -> pd.DataFrame:
 
 
 def main(
+    n_words: int,
     csvs_path: Splits,
     video_root: str,
     verified_csvs_path: Splits,
 ) -> None:
     for split in ["train", "test", "val"]:
         csv_path = getattr(csvs_path, split)
+        subset_csv_path = create_subset(csv_path, n_words)
         verified_csv_path = create_path(getattr(verified_csvs_path, split))
-        verified_data = verify_videos(csv_path, video_root)
+        verified_data = verify_videos(subset_csv_path, video_root)
         verified_data.to_csv(verified_csv_path, index=False)
 
 
@@ -48,6 +50,7 @@ if __name__ == "__main__":
     config = load_config("Process video dataset for classification")
 
     main(
+        config.n_words,
         config.data.raw.csvs,
         config.data.raw.videos,
         config.data.processed.csvs,
