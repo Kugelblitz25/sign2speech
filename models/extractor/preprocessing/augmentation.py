@@ -7,7 +7,7 @@ import torch
 import torchvision.transforms.functional as TF
 from pytorchvideo.data.encoded_video import EncodedVideo
 from pytorchvideo.transforms import Permute, ShortSideScale
-from torchvision.transforms import ColorJitter, Compose, Lambda
+from torchvision.transforms import ColorJitter, Compose, Lambda, RandomHorizontalFlip
 from torchvision.transforms._transforms_video import (
     CenterCropVideo,
 )
@@ -29,6 +29,7 @@ def apply_augmentation(frames: torch.Tensor) -> torch.Tensor:
             Permute((1, 0, 2, 3)),
             Lambda(lambda x: (x / 255.0)),
             ColorJitter(brightness=0.6, contrast=0.6, hue=0.2, saturation=0.6),
+            RandomHorizontalFlip(),
             Lambda(lambda x: (x * 255.0)),
         ]
     )
