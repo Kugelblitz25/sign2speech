@@ -10,6 +10,42 @@ from torch.utils.data import Dataset
 from models.extractor.dataset import crop_size, num_frames, transform
 
 
+
+def standardize_frames(frames: torch.Tensor, target_frames: int = 64) -> torch.Tensor:
+    c, t, h, w = frames.shape
+    
+    if t < target_frames:
+        pad_start = (target_frames - t) // 2
+        pad_end = target_frames - t - pad_start
+        first_frame = frames[:, 0:1, :, :].expand(-1, pad_start, -1, -1)
+        last_frame = frames[:, -1:, :, :].expand(-1, pad_end, -1, -1)
+        frames = torch.cat([first_frame, frames, last_frame], dim=1)
+    elif t > target_frames:
+        if t > 159:
+            indices = torch.arange(0, t, 3)
+        elif t > 95:
+            indices = torch.arange(0, t, 2)
+        else:
+            indices = torch.arange(t)
+        
+        frames = frames[:, indices, :, :]
+        t = frames.shape[1]
+
+        if t > target_frames:
+            remove_total = t - target_frames
+            remove_start = remove_total // 2
+            remove_end = remove_total - remove_start
+            frames = frames[:, remove_start:t-remove_end, :, :]
+        elif t < target_frames:
+            pad_start = (target_frames - t) // 2
+            pad_end = target_frames - t - pad_start
+            first_frame = frames[:, 0:1, :, :].expand(-1, pad_start, -1, -1)
+            last_frame = frames[:, -1:, :, :].expand(-1, pad_end, -1, -1)
+            frames = torch.cat([first_frame, frames, last_frame], dim=1)
+
+    return frames
+
+
 class S2S_Dataset(Dataset):
     def __init__(
         self,
@@ -62,7 +98,7 @@ class S2S_Dataset(Dataset):
             video = EncodedVideo.from_path(video_path)
             video_data = video.get_clip(start_sec=0, end_sec=video.duration)
             video_data = self.transform(video_data)
-            video_tensor = video_data["video"]
+            video_tensor = standardize_frames(video_data["video"])
             spectrogram = torch.tensor(self.spectrograms[gloss], dtype=torch.float32)
 
             return video_tensor, label, spectrogram
