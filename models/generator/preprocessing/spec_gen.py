@@ -8,7 +8,7 @@ import pandas as pd
 import soundfile as sf
 from gtts import gTTS
 
-from utils.common import create_path, get_logger, create_subset
+from utils.common import create_path, create_subset, get_logger
 from utils.config import load_config
 
 logger = get_logger("logs/spectrogram_generation.log")

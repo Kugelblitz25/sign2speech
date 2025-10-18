@@ -22,6 +22,6 @@ class S2S_Model(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        features, logits = self.extractor(x)
+        features = self.extractor(x)
         specs = self.transformer(features)
-        return logits, specs
+        return specs

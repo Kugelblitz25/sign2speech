@@ -12,6 +12,7 @@ class FeatureExtractor:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = Extractor(num_classes).to(self.device)
         load_model_weights(self.model, weights_path, self.device)
+        self.model.eval()
 
     def stack_frames(self, frames: list[np.ndarray]) -> torch.Tensor:
         frames_array = np.stack(frames, axis=0)
@@ -21,7 +22,6 @@ class FeatureExtractor:
     def __call__(self, frames: list[np.ndarray]) -> tuple[torch.Tensor, float]:
         frames = self.stack_frames(frames)
         frames = transform({"video": frames})["video"].to(self.device).unsqueeze(0)
-        self.model.eval()
         with torch.no_grad():
             features, confs = self.model(frames)
             max_conf, _ = torch.max(F.softmax(confs, dim=1), 1)

@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from models.extractor.dataset import WLASLDataset
-from utils.common import create_path, get_logger, create_subset
+from utils.common import create_path, create_subset, get_logger
 from utils.config import Splits, load_config
 
 logger = get_logger("logs/video_verify.log")

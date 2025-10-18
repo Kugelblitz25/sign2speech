@@ -1,11 +1,11 @@
-import cv2
-import numpy as np
-
-import pandas as pd
 from pathlib import Path
 
-from utils.config import load_config
+import cv2
+import numpy as np
+import pandas as pd
+
 from utils.common import create_subset
+from utils.config import load_config
 
 
 def combine_videos(video_list: list[str], video_root: Path) -> np.ndarray:

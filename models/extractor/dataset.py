@@ -7,7 +7,6 @@ from pytorchvideo.data.encoded_video import EncodedVideo
 from pytorchvideo.transforms import (
     ApplyTransformToKey,
     ShortSideScale,
-    UniformTemporalSubsample,
 )
 from torch.utils.data import Dataset
 from torchvision.transforms import Compose, Lambda
@@ -43,7 +42,7 @@ transform = ApplyTransformToKey(
 
 def standardize_frames(frames: torch.Tensor, target_frames: int = 64) -> torch.Tensor:
     c, t, h, w = frames.shape
-    
+
     if t < target_frames:
         pad_start = (target_frames - t) // 2
         pad_end = target_frames - t - pad_start
@@ -57,7 +56,7 @@ def standardize_frames(frames: torch.Tensor, target_frames: int = 64) -> torch.T
             indices = torch.arange(0, t, 2)
         else:
             indices = torch.arange(t)
-        
+
         frames = frames[:, indices, :, :]
         t = frames.shape[1]
 
@@ -65,7 +64,7 @@ def standardize_frames(frames: torch.Tensor, target_frames: int = 64) -> torch.T
             remove_total = t - target_frames
             remove_start = remove_total // 2
             remove_end = remove_total - remove_start
-            frames = frames[:, remove_start:t-remove_end, :, :]
+            frames = frames[:, remove_start : t - remove_end, :, :]
         elif t < target_frames:
             pad_start = (target_frames - t) // 2
             pad_end = target_frames - t - pad_start
@@ -74,6 +73,8 @@ def standardize_frames(frames: torch.Tensor, target_frames: int = 64) -> torch.T
             frames = torch.cat([first_frame, frames, last_frame], dim=1)
 
     return frames
+
+
 class WLASLDataset(Dataset):
     def __init__(self, videos_csv: str | Path, video_dir: str | Path) -> None:
         self.data = pd.read_csv(videos_csv)

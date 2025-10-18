@@ -10,10 +10,9 @@ from torch.utils.data import Dataset
 from models.extractor.dataset import crop_size, num_frames, transform
 
 
-
 def standardize_frames(frames: torch.Tensor, target_frames: int = 64) -> torch.Tensor:
     c, t, h, w = frames.shape
-    
+
     if t < target_frames:
         pad_start = (target_frames - t) // 2
         pad_end = target_frames - t - pad_start
@@ -27,7 +26,7 @@ def standardize_frames(frames: torch.Tensor, target_frames: int = 64) -> torch.T
             indices = torch.arange(0, t, 2)
         else:
             indices = torch.arange(t)
-        
+
         frames = frames[:, indices, :, :]
         t = frames.shape[1]
 
@@ -35,7 +34,7 @@ def standardize_frames(frames: torch.Tensor, target_frames: int = 64) -> torch.T
             remove_total = t - target_frames
             remove_start = remove_total // 2
             remove_end = remove_total - remove_start
-            frames = frames[:, remove_start:t-remove_end, :, :]
+            frames = frames[:, remove_start : t - remove_end, :, :]
         elif t < target_frames:
             pad_start = (target_frames - t) // 2
             pad_end = target_frames - t - pad_start
@@ -58,8 +57,6 @@ class S2S_Dataset(Dataset):
         spec_data = pd.read_csv(spec_csv)
         self.transform = transform
 
-        classes = sorted(self.video_data.Gloss.unique())
-        self.class_to_idx = {cls: idx for idx, cls in enumerate(classes)}
         self.spectrograms = self.load_spectrograms(spec_data, spec_len)
 
         self.video_data = self.video_data[
@@ -88,11 +85,10 @@ class S2S_Dataset(Dataset):
     def __len__(self) -> int:
         return len(self.video_data)
 
-    def __getitem__(self, idx: int) -> tuple[torch.Tensor, int, torch.Tensor]:
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         item = self.video_data.iloc[idx]
         video_path = item["Video file"]
         gloss = item["Gloss"]
-        label = self.class_to_idx[gloss]
 
         try:
             video = EncodedVideo.from_path(video_path)
@@ -101,11 +97,10 @@ class S2S_Dataset(Dataset):
             video_tensor = standardize_frames(video_data["video"])
             spectrogram = torch.tensor(self.spectrograms[gloss], dtype=torch.float32)
 
-            return video_tensor, label, spectrogram
+            return video_tensor, spectrogram
         except Exception as e:
             logging.warning(f"Failed to load video {video_path}: {str(e)}")
             return (
                 torch.zeros((3, num_frames, crop_size, crop_size)),
-                label,
                 torch.tensor(self.spectrograms[gloss]),
             )

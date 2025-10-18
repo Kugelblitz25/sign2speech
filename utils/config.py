@@ -77,12 +77,14 @@ class Generator:
 
 
 @dataclass
+class CombinedTraining(Training):
+    scheduler_max_T: int
+
+
+@dataclass
 class Combined:
     checkpoints: str
-    epochs: int
-    batch_size: int
-    patience: int
-    num_workers: int
+    training: CombinedTraining
 
 
 @dataclass
@@ -201,12 +203,21 @@ def load_config(desc: str, **kwargs) -> Config:
         max_length=config_dict["generator"]["max_length"],
     )
 
+    combined_training = CombinedTraining(
+        epochs=config_dict["combined"]["training"]["epochs"],
+        batch_size=config_dict["combined"]["training"]["batch_size"],
+        lr=config_dict["combined"]["training"]["lr"],
+        weight_decay=config_dict["combined"]["training"]["weight_decay"],
+        patience=config_dict["combined"]["training"]["patience"],
+        scheduler_patience=config_dict["combined"]["training"]["scheduler_patience"],
+        scheduler_factor=config_dict["combined"]["training"]["scheduler_factor"],
+        scheduler_max_T=config_dict["combined"]["training"]["scheduler_max_T"],
+        enable_earlystop=config_dict["combined"]["training"]["enable_earlystop"],
+        num_workers=config_dict["combined"]["training"]["num_workers"],
+    )
+
     combined = Combined(
-        checkpoints=config_dict["combined"]["checkpoints"],
-        epochs=config_dict["combined"]["epochs"],
-        batch_size=config_dict["combined"]["batch_size"],
-        patience=config_dict["combined"]["patience"],
-        num_workers=config_dict["combined"]["num_workers"],
+        checkpoints=config_dict["combined"]["checkpoints"], training=combined_training
     )
 
     nms = NMSConfig(

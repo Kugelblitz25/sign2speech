@@ -56,11 +56,18 @@ generator:
   max_length: 64
 
 combined:
-  checkpoints: models/checkpoints/asl-citizen-100
-  epochs: 500
-  batch_size: 3
-  patience: 20
-  num_workers: 4
+  checkpoints: models/checkpoints/asl-100/flipped/asl-pp/no_ce
+  training:
+    epochs: 500
+    batch_size: 3
+    lr: 1.e-02
+    weight_decay: 1.e-9
+    patience: 10
+    scheduler_patience: 5
+    scheduler_factor: 0.3
+    scheduler_max_T: 50
+    enable_earlystop: true
+    num_workers: 4
 
 pipeline: # To use for complete pipeline
   nms:

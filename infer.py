@@ -1,12 +1,12 @@
 import traceback
 
 import numpy as np
-from tqdm import tqdm
-from models import Sign2Speech
 import soundfile as sf
+from tqdm import tqdm
 
-from utils.config import load_config, PipelineConfig
-from utils.common import create_path, Video, source, get_logger
+from models import Sign2Speech
+from utils.common import Video, create_path, get_logger, source
+from utils.config import PipelineConfig, load_config
 
 logger = get_logger("logs/inference.log")
 

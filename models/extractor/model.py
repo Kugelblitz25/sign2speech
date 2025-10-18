@@ -40,17 +40,11 @@ class Extractor(nn.Module):
         super().__init__()
         self.base = BaseExtractor(model=base_model, n_freeze=n_freeze)
 
-        self.classifier = nn.Sequential(
-            nn.Dropout(0.5, inplace=True),
-            nn.Linear(self.base.output_dim, num_classes, bias=True),
-            nn.ReLU(inplace=True),
-        )
         self.flatten = nn.Sequential(
             nn.AdaptiveAvgPool3d(1),
             nn.Flatten(),
         )
 
-    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        features = self.base(x)
-        output = self.classifier(features).permute(0, 4, 1, 2, 3)
-        return self.flatten(features.permute(0, 4, 1, 2, 3)), self.flatten(output)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        features = self.base(x).permute(0, 4, 1, 2, 3)
+        return self.flatten(features)
