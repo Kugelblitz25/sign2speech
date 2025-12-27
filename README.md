@@ -33,7 +33,6 @@ This project translates sign language videos into audible speech. It uses a deep
 Here's a high-level overview of the key directories and files:
 
 -   `config.yaml`: Central configuration file for data paths, model parameters, and training settings.
--   `experiments/`: (Ignored as per user request - typically for logging and experimental results).
 -   `models/`: Contains the core deep learning models.
     -   `__init__.py`: Defines the main `Sign2Speech` pipeline class.
     -   `extractor/`: Video feature extraction model (e.g., I3D).
