@@ -1,6 +1,9 @@
-# Sign Language to Speech Synthesis
+# IsoSignVid2Aud: Sign Language Video to Audio Conversion without Text Intermediaries
 
-This project translates sign language videos into audible speech. It uses a deep learning pipeline consisting of a video feature extractor, a transformer model to convert visual features into spectrograms, and an audio generator to synthesize speech from these spectrograms.
+
+[![Paper](https://img.shields.io/badge/Paper-arXiv-red.svg)](https://arxiv.org/abs/2510.07837) [![Project Page](https://img.shields.io/badge/Project_Page-Visit-green.svg)](https://kugelblitz25.github.io/sign2speech/)
+
+Sign language to spoken language audio translation is important to connect the hearing- and speech-challenged humans with others. We consider sign language videos with isolated sign sequences rather than continuous grammatical signing. Such videos are useful in educational applications and sign prompt interfaces. Towards this, we propose IsoSignVid2Aud, a novel end-to-end framework that translates sign language videos with a sequence of possibly non-grammatic continuous signs to speech without requiring intermediate text representation, providing immediate communication benefits while avoiding the latency and cascading errors inherent in multi-stage translation systems. Our approach combines an I3D-based feature extraction module with a specialized feature transformation network and an audio generation pipeline, utilizing a novel Non-Maximal Suppression (NMS) algorithm for the temporal detection of signs in non-grammatic continuous sequences. Experimental results demonstrate competitive performance on ASL-Citizen-1500 and WLASL-100 datasets with Top-1 accuracies of 72.01% and 78.67%, respectively, and audio quality metrics (PESQ: 2.67, STOI: 0.73) indicating intelligible speech output.
 
 ## Table of Contents
 
@@ -97,7 +100,7 @@ This will launch a local web server, and you can access the interface through yo
 
 The project includes a script to evaluate the performance of the Sign2Speech pipeline:
 
-- Create set of test videos with specified number of words per minute
+- Create set of test videos with specified number of words per videos
 ```bash
 python utils/create_test_videos.py --num_videos 10 --wpv 10 --output_dir test_videos
 ```
