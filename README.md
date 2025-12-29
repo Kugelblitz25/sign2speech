@@ -7,16 +7,14 @@ This project translates sign language videos into audible speech. It uses a deep
 - [Features](#features)
 - [Project Structure](#project-structure)
 - [Installation](#installation)
-  - [Prerequisites](#prerequisites)
-  - [Setup](#setup)
-- [Usage](#usage)
-  - [Running the Gradio Interface](#running-the-gradio-interface)
-  - [Running Tests](#running-tests)
+- [Running the Gradio Interface](#running-the-gradio-interface)
+- [Running Tests](#running-tests)
 - [Configuration](#configuration)
 - [Training](#training)
   - [Dataset](#dataset)
-  - [Training Pipeline](#training-pipeline)
+  - [Combined Training](#combined-training)
   - [Individual Model Training](#individual-model-training)
+  - [Training Pipeline](#training-pipeline)
 - [Utilities](#utilities)
 - [License](#license)
 
@@ -49,8 +47,6 @@ Here's a high-level overview of the key directories and files:
 -   `LICENSE`: Project license (Apache License 2.0).
 
 ## Installation
-
-### Setup
 
 1.  **Clone the repository:**
     ```bash
