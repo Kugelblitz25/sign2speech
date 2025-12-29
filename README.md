@@ -50,18 +50,12 @@ Here's a high-level overview of the key directories and files:
 
 ## Installation
 
-### Prerequisites
-
--   Python (>=3.10 recommended, as per `pyproject.toml`).
--   It's recommended to use a virtual environment.
--   [uv](https://github.com/astral-sh/uv): A fast Python package installer and resolver (optional but recommended for consistency with project scripts like `transformer.sh`). If you don't use `uv`, you can use `pip`.
-
 ### Setup
 
 1.  **Clone the repository:**
     ```bash
-    git clone <repository_url>
-    cd <repository_directory>
+    git clone https://github.com/Kugelblitz25/sign2speech
+    cd sign2speech
     ```
 
 2.  **Create and activate a virtual environment:**
@@ -79,30 +73,21 @@ Here's a high-level overview of the key directories and files:
 3.  **Install dependencies:**
     The preferred method is using `uv` with `pyproject.toml` for development or general use:
     ```bash
-    # Install uv if you haven't already:
-    # pip install uv
-    # or follow instructions on uv's GitHub page.
-
     # Install project dependencies using uv:
-    uv pip install -e .[test]
+    uv pip install -r pyproject.toml --extra test
     ```
     The `.[test]` will install main dependencies plus those needed for testing, as defined in `pyproject.toml`.
-    If you prefer not to use `uv`, you can use `pip` with `pyproject.toml` (requires a recent version of pip that supports PEP 517):
+    If you prefer not to use `uv`, you can use `pip` with `requirements.txt`:
     ```bash
-    pip install -e .[test]
-    ```
-    Alternatively, you can use the `requirements.txt` (though `pyproject.toml` is more up-to-date):
-    ```bash
-    uv pip install -r requirements.txt
-    # or
-    # pip install -r requirements.txt
+    pip install -r requirements.txt
     ```
 
-    *Note on `PYTHONPATH`*: The original README and `trainer.sh` mention setting `export PYTHONPATH=$(pwd)`. If you install the package in editable mode (`pip install -e .` or `uv pip install -e .`), this should generally not be necessary as the project's modules will be discoverable.
+>Note: If you get `ModuleNotFoundError: No module named 'models'`, run
+>```bash
+>export PYTHONPATH=$(pwd)
+>```
 
-## Usage
-
-### Running the Gradio Interface
+## Running the Gradio Interface
 
 To start the Gradio web interface for a live demonstration:
 
@@ -110,34 +95,37 @@ To start the Gradio web interface for a live demonstration:
 python ui.py
 ```
 
-This will launch a local web server, and you can access the interface through your browser (usually at `http://127.0.0.1:7860`). You can upload a sign language video to get the synthesized audio.
+This will launch a local web server, and you can access the interface through your browser (usually at http://127.0.0.1:7860). You can upload a sign language video to get the synthesized audio.
 
-### Running Tests
+## Running Tests
 
 The project includes a script to evaluate the performance of the Sign2Speech pipeline:
 
+- Create set of test videos with specified number of words per minute
 ```bash
-python test.py --config_file config.yaml
+python utils/create_test_videos.py --num_videos 10 --wpv 10 --output_dir test_videos
+```
+- Run tests
+```bash
+python test.py --videos_loc test_videos
 ```
 
 -   The `test.py` script uses settings from `config.yaml` to load data and models.
--   It typically processes test videos, generates audio, transcribes it using an ASR model (like Whisper), and calculates metrics such as WER, CER, and BLEU against reference glosses.
+-   It processes test videos, generates audio, transcribes it using an ASR model (like Whisper), and calculates metrics such as WER, CER, and BLEU against reference glosses.
 -   Ensure that paths to test data and model weights in your `config.yaml` are correctly set up.
 
-There is also a test script specific to the transformer model located at `models/transformer/test.py`. This can be run via `python models/transformer/test.py` or using the `transformer.sh` script.
+There are also a test scripts specific to the feature extractor and  feature transformer models located at `models/extractor/test.py` and `models/transformer/test.py` respectfully.
 
 ## Configuration
 
 The main configuration for the project is done through the `config.yaml` file. This file is structured using YAML and includes sections for:
 
 -   `n_words`: Number of words/classes the models are trained on.
--   `data`: Paths for raw and processed datasets, including videos, CSV files for splits (train, validation, test), class lists, spectrograms, and video features.
-    -   *Note on Dataset:* The `config.yaml` currently refers to `data/asl-citizen/`. The original README mentioned WLASL-2000. You will need to ensure your dataset is structured as expected by the configuration and processing scripts.
+-   `data`: Paths for raw and processed datasets, including videos, CSV files for splits (train, validation, test).
 -   `extractor`: Settings for the feature extractor model (e.g., I3D), including augmentation, checkpoint paths, and training parameters.
 -   `transformer`: Settings for the feature transformer model, including paths to extractor weights, checkpoint paths, and training parameters.
 -   `generator`: Settings for the audio generator, including checkpoint paths and maximum audio length.
 -   `pipeline`: Configuration for the end-to-end inference pipeline, including NMS (Non-Maximum Suppression) parameters and paths to the pre-trained weights for the extractor and transformer models.
-    -   *Note on Model Weights:* The `pipeline` section in `config.yaml` specifies paths for `extractor_weights` and `transformer_weights`. Ensure these paths point to valid, trained model checkpoint files. The default configuration might point to paths like `experiments/combined/checkpoints/...`. If the `experiments` folder is not available or these weights are not present, you will need to train your own models or obtain pre-trained weights and update these paths accordingly.
 
 The `utils/config.py` script provides dataclasses that define the structure of this configuration and helper functions to load it.
 
@@ -148,32 +136,15 @@ The project provides scripts and a framework for training the models from scratc
 ### Dataset
 
 -   The training process requires a dataset of sign language videos with corresponding glosses (text transcriptions of the signs).
--   The `config.yaml` file specifies paths to training, validation, and test data. You will need to prepare your dataset according to the expected format and update these paths. Common datasets for sign language include WLASL, ASLLVD, etc. The current `config.yaml` seems set up for a dataset named "asl-citizen".
+-   The `config.yaml` file specifies paths to training, validation, and test data csvs. You will need to prepare your dataset according to the expected format and update these paths. Common datasets for sign language include WLASL, ASL-Citizen, etc.
 -   Preprocessing scripts are available in `models/extractor/preprocessing/` and `models/generator/preprocessing/`. These handle tasks like:
     -   `models/generator/preprocessing/spec_gen.py`: Generating spectrograms.
-    -   `models/extractor/preprocessing/verify.py`: Verifying video files and creating data splits.
+    -   `models/extractor/preprocessing/verify.py`: Verifying video files are not corrupted.
     -   `models/extractor/preprocessing/augmentation.py`: Augmenting video data to increase dataset size.
-    -   `models/transformer/preprocessing/features_gen.py`: Generating features from videos using a trained feature extractor.
+    -   `models/transformer/preprocessing/features_gen.py`: Generating features from videos using a trained feature extractor in case you want to train the two parts individually.
 
-### Training Pipeline
+### Combined Training
 
-The `trainer.sh` script provides an automated way to run the entire training process:
-
-```bash
-chmod +x trainer.sh
-./trainer.sh
-```
-
-This script typically performs the following steps (as seen in its content):
-1.  Generates spectrograms.
-2.  Verifies and splits video data.
-3.  Augments video data.
-4.  Trains the feature extractor (`models/extractor/train.py`).
-5.  Generates features for the transformer model (`models/transformer/preprocessing/features_gen.py`).
-6.  Trains the feature transformer (`models/transformer/train.py`).
-7.  Runs a test (`test.py`).
-
-Ensure your `config.yaml` is correctly set up before running `trainer.sh`.
 
 ### Individual Model Training
 
@@ -187,21 +158,39 @@ You can also train individual components of the pipeline:
     ```bash
     python models/transformer/train.py --config_file config.yaml
     # Or for cosine annealing variant:
-    # python models/transformer/train_cosine.py --config_file config.yaml
+    # python models/transformer/train.py --use_cosine true --config_file config.yaml
     ```
-    The `transformer.sh` script also provides examples of running these training scripts, potentially with `uv`.
 
 Training parameters such as epochs, batch size, learning rate, etc., can be adjusted in the `config.yaml` file under the respective model's `training` section.
+
+### Training Pipeline
+
+The `trainer.sh` script provides an automated way to run the individual training process:
+
+```bash
+chmod +x trainer.sh
+./trainer.sh
+```
+
+This script performs the following steps:
+1.  Generates spectrograms.
+2.  Verifies and splits video data.
+3.  Augments video data.
+4.  Trains the feature extractor (`models/extractor/train.py`).
+5.  Generates features for the feature transformer model (`models/transformer/preprocessing/features_gen.py`).
+6.  Trains the feature transformer (`models/transformer/train.py`).
+7.  Runs a test (`test.py`).
+
+Ensure your `config.yaml` is correctly set up before running `trainer.sh`.
 
 ## Utilities
 
 The `utils/` directory contains several helpful scripts:
 
--   `common.py`: Logger setup (`get_logger`) and path creation utilities (`create_path`).
+-   `common.py`: Logger setup (`get_logger`) and subset creation utilities (`create_subset`).
 -   `config.py`: Loads and parses the `config.yaml` file into typed dataclasses.
 -   `create_test_videos.py`: Script to generate concatenated test videos from a dataset, useful for creating specific evaluation samples.
 -   `model.py`: Includes an `EarlyStopping` class for training, and functions to `save_model` and `load_model_weights`.
--   `plot_exp.py`: Parses training log files (loss, accuracy) and plots them using `matplotlib`.
 
 ## License
 

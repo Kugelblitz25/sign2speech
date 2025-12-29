@@ -8,12 +8,11 @@ import whisper
 from jiwer import cer, wer
 from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
 
-from utils.config import load_config
-from utils.common import get_logger
+from utils.config import PipelineConfig, load_config
+from utils.common import create_subset, get_logger
 from infer import predict
 
 # Load model
-config = load_config("Testing...")
 asr_model = whisper.load_model("large")
 logger = get_logger("logs/testing.log")
 
@@ -42,7 +41,13 @@ def evaluate(reference: str, hypothesis: str) -> dict:
     }
 
 
-def main(test_videos_dir: str, word_list: list[str]):
+def main(
+    test_videos_dir: str,
+    word_list: list[str],
+    n_words: int,
+    max_length: int,
+    cfg: PipelineConfig,
+):
     test_videos = os.listdir(test_videos_dir)
 
     all_metrics = []
@@ -55,15 +60,11 @@ def main(test_videos_dir: str, word_list: list[str]):
         combined_gloss = " ".join(glosses)
         try:
             t1 = time.time()
-            audio = predict(
-                video_path,
-                config.n_words,
-                config.generator.max_length,
-                config.pipeline,
-            )
+            audio = predict(video_path, n_words, max_length, cfg)
             t2 = time.time()
         except Exception as e:
             logger.error(f"Error processing concatenated video: {e}")
+            continue
 
         hypothesis = transcribe_audio(audio)
         metrics = evaluate(combined_gloss, hypothesis)
@@ -109,6 +110,20 @@ def main(test_videos_dir: str, word_list: list[str]):
 
 
 if __name__ == "__main__":
-    test_data = pd.read_csv("data/asl-citizen/raw/test.csv")
+    config = load_config(
+        "Test pipeline",
+        videos_loc={
+            "type": str,
+            "default": "test_videos",
+            "help": "Location of test videos",
+        },
+    )
+    test_data = pd.read_csv(create_subset(config.data.raw.csvs.test, config.n_words))
     word_list = test_data["Gloss"].unique().tolist()
-    main("test_videos", word_list)
+    main(
+        config.videos_loc,
+        word_list,
+        config.n_words,
+        config.generator.max_length,
+        config.pipeline,
+    )
