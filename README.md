@@ -1,17 +1,38 @@
-# IsoSignVid2Aud: Sign Language Video to Audio Conversion without Text Intermediaries
+<div align="center">
 
+<h1> IsoSignVid2Aud </h1>
+
+### Sign Language Video to Audio Conversion without Text Intermediaries
 
 [![Paper](https://img.shields.io/badge/Paper-arXiv-red.svg)](https://arxiv.org/abs/2510.07837) [![Project Page](https://img.shields.io/badge/Project_Page-Visit-green.svg)](https://kugelblitz25.github.io/sign2speech/)
+<br/>
 
-Sign language to spoken language audio translation is important to connect the hearing- and speech-challenged humans with others. We consider sign language videos with isolated sign sequences rather than continuous grammatical signing. Such videos are useful in educational applications and sign prompt interfaces. Towards this, we propose IsoSignVid2Aud, a novel end-to-end framework that translates sign language videos with a sequence of possibly non-grammatic continuous signs to speech without requiring intermediate text representation, providing immediate communication benefits while avoiding the latency and cascading errors inherent in multi-stage translation systems. Our approach combines an I3D-based feature extraction module with a specialized feature transformation network and an audio generation pipeline, utilizing a novel Non-Maximal Suppression (NMS) algorithm for the temporal detection of signs in non-grammatic continuous sequences. Experimental results demonstrate competitive performance on ASL-Citizen-1500 and WLASL-100 datasets with Top-1 accuracies of 72.01% and 78.67%, respectively, and audio quality metrics (PESQ: 2.67, STOI: 0.73) indicating intelligible speech output.
+**Harsh Kavediya**<sup>&dagger;,1</sup>, 
+**Vighnesh Nayak**<sup>&dagger;,1</sup>, 
+**Bheeshm Sharma**<sup>2</sup>
+**Balamurugan Palaniappan**<sup>2</sup>
 
-## Table of Contents
+<sup>1</sup>Department of Mechanical Engineering &nbsp;&nbsp; <sup>2</sup>Department of IEOR
+
+Indian Institute of Technology Bombay
+
+**Accepted at 5th International Conference on AI-ML Systems [2025]**
+
+
+</div>
+
+## 📝 Abstract
+
+> Sign language to spoken language audio translation is important to connect the hearing- and speech-challenged humans with others. We consider sign language videos with isolated sign sequences rather than continuous grammatical signing. Such videos are useful in educational applications and sign prompt interfaces. Towards this, we propose IsoSignVid2Aud, a novel end-to-end framework that translates sign language videos with a sequence of possibly non-grammatic continuous signs to speech without requiring intermediate text representation, providing immediate communication benefits while avoiding the latency and cascading errors inherent in multi-stage translation systems. Our approach combines an I3D-based feature extraction module with a specialized feature transformation network and an audio generation pipeline, utilizing a novel Non-Maximal Suppression (NMS) algorithm for the temporal detection of signs in non-grammatic continuous sequences. Experimental results demonstrate competitive performance on ASL-Citizen-1500 and WLASL-100 datasets with Top-1 accuracies of 72.01% and 78.67%, respectively, and audio quality metrics (PESQ: 2.67, STOI: 0.73) indicating intelligible speech output.
+
+## 📋Table of Contents
 
 - [Features](#features)
 - [Project Structure](#project-structure)
 - [Installation](#installation)
-- [Running the Gradio Interface](#running-the-gradio-interface)
-- [Running Tests](#running-tests)
+- [Usage](#🚀-usage)
+  - [Running the Gradio Interface](#running-the-gradio-interface)
+  - [Running Tests](#running-tests)
 - [Configuration](#configuration)
 - [Training](#training)
   - [Dataset](#dataset)
@@ -22,7 +43,7 @@ Sign language to spoken language audio translation is important to connect the h
 - [Citation](#citation)
 - [License](#license)
 
-## Features
+## ✨ Features
 
 -   **Sign Language to Speech:** Converts input sign language videos into spoken audio.
 -   **Gradio Interface:** Easy-to-use web interface for demonstrations.
@@ -30,7 +51,7 @@ Sign language to spoken language audio translation is important to connect the h
 -   **Configurable:** Training and model parameters can be adjusted via a central configuration file.
 -   **Extensible:** Provides scripts for training, testing, and utility functions for further development.
 
-## Project Structure
+## 📂 Project Structure
 
 Here's a high-level overview of the key directories and files:
 
@@ -50,7 +71,7 @@ Here's a high-level overview of the key directories and files:
 -   `pyproject.toml`: Project definition file, includes dependencies (preferred for setup).
 -   `LICENSE`: Project license (Apache License 2.0).
 
-## Installation
+## 🛠️ Installation
 
 1.  **Clone the repository:**
     ```bash
@@ -87,7 +108,9 @@ Here's a high-level overview of the key directories and files:
 >export PYTHONPATH=$(pwd)
 >```
 
-## Running the Gradio Interface
+## 🚀 Usage
+
+### Running the Gradio Interface
 
 To start the Gradio web interface for a live demonstration:
 
@@ -97,7 +120,7 @@ python ui.py
 
 This will launch a local web server, and you can access the interface through your browser (usually at http://127.0.0.1:7860). You can upload a sign language video to get the synthesized audio.
 
-## Running Tests
+### Running Tests
 
 The project includes a script to evaluate the performance of the Sign2Speech pipeline:
 
@@ -116,7 +139,7 @@ python test.py --videos_loc test_videos
 
 There are also a test scripts specific to the feature extractor and  feature transformer models located at `models/extractor/test.py` and `models/transformer/test.py` respectfully.
 
-## Configuration
+## ⚙️ Configuration
 
 The main configuration for the project is done through the `config.yaml` file. This file is structured using YAML and includes sections for:
 
@@ -129,7 +152,7 @@ The main configuration for the project is done through the `config.yaml` file. T
 
 The `utils/config.py` script provides dataclasses that define the structure of this configuration and helper functions to load it.
 
-## Training
+## 🏋️ Training
 
 The project provides scripts and a framework for training the models from scratch or fine-tuning them.
 
@@ -202,7 +225,7 @@ This script performs the following steps:
 
 Ensure your `config.yaml` is correctly set up before running `trainer.sh`.
 
-## Utilities
+## 🛠️ Utilities
 
 The `utils/` directory contains several helpful scripts:
 
@@ -211,7 +234,7 @@ The `utils/` directory contains several helpful scripts:
 -   `create_test_videos.py`: Script to generate concatenated test videos from a dataset, useful for creating specific evaluation samples.
 -   `model.py`: Includes an `EarlyStopping` class for training, and functions to `save_model` and `load_model_weights`.
 
-## Citation
+## 🔗 Citation
 
 If you find this work useful in your research, please cite:
 ```bib
@@ -226,6 +249,6 @@ If you find this work useful in your research, please cite:
 }
 ```
 
-## License
+## 📄 License
 
 This project is licensed under the Apache License 2.0. See the `LICENSE` file for details.
