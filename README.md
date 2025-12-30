@@ -19,6 +19,7 @@ Sign language to spoken language audio translation is important to connect the h
   - [Individual Model Training](#individual-model-training)
   - [Training Pipeline](#training-pipeline)
 - [Utilities](#utilities)
+- [Citation](#citation)
 - [License](#license)
 
 ## Features
@@ -134,26 +135,46 @@ The project provides scripts and a framework for training the models from scratc
 
 ### Dataset
 
--   The training process requires a dataset of sign language videos with corresponding glosses (text transcriptions of the signs).
--   The `config.yaml` file specifies paths to training, validation, and test data csvs. You will need to prepare your dataset according to the expected format and update these paths. Common datasets for sign language include WLASL, ASL-Citizen, etc.
--   Preprocessing scripts are available in `models/extractor/preprocessing/` and `models/generator/preprocessing/`. These handle tasks like:
-    -   `models/generator/preprocessing/spec_gen.py`: Generating spectrograms.
-    -   `models/extractor/preprocessing/verify.py`: Verifying video files are not corrupted.
-    -   `models/extractor/preprocessing/augmentation.py`: Augmenting video data to increase dataset size.
-    -   `models/transformer/preprocessing/features_gen.py`: Generating features from videos using a trained feature extractor in case you want to train the two parts individually.
+- The training process requires a dataset of sign language videos with corresponding glosses (text transcriptions of the signs).
+- The `config.yaml` file specifies paths to training, validation, and test data csvs. Prepare the dataset according to the expected format and update these paths. Common datasets for sign language include WLASL, ASL-Citizen, etc.
+
+### Preprocessing
+
+- Generate audio spectrograms for glosses
+  ```bash
+  python models/generator/preprocessing/spec_gen.py
+  ```
+- Remove corrupted videos
+  ```bash
+  python models/extractor/preprocessing/verify.py
+  ```
+- Augment the videos to generate more data
+  ```bash
+  python models/extractor/preprocessing/augmentation.py
+  ```
 
 ### Combined Training
 
+Run the combined training using following command 
+  ```bash
+  python models/train.py --config_file config.yaml
+  ```
+
+Modify the optimizer and scheduler parameters for the feature extractor and feature transformer in their corresponding sections in `config.yaml` file. Epochs and batch sizes are defined in separate combined section.
 
 ### Individual Model Training
 
 You can also train individual components of the pipeline:
 
--   **Feature Extractor:**
+- **Feature Extractor:**
     ```bash
     python models/extractor/train.py --config_file config.yaml
     ```
--   **Feature Transformer:**
+- Generate features to train feature transformer
+    ```bash
+    python models/transformer/preprocessing/features_gen.py
+    ```
+- **Feature Transformer:**
     ```bash
     python models/transformer/train.py --config_file config.yaml
     # Or for cosine annealing variant:
@@ -178,7 +199,6 @@ This script performs the following steps:
 4.  Trains the feature extractor (`models/extractor/train.py`).
 5.  Generates features for the feature transformer model (`models/transformer/preprocessing/features_gen.py`).
 6.  Trains the feature transformer (`models/transformer/train.py`).
-7.  Runs a test (`test.py`).
 
 Ensure your `config.yaml` is correctly set up before running `trainer.sh`.
 
@@ -190,6 +210,21 @@ The `utils/` directory contains several helpful scripts:
 -   `config.py`: Loads and parses the `config.yaml` file into typed dataclasses.
 -   `create_test_videos.py`: Script to generate concatenated test videos from a dataset, useful for creating specific evaluation samples.
 -   `model.py`: Includes an `EarlyStopping` class for training, and functions to `save_model` and `load_model_weights`.
+
+## Citation
+
+If you find this work useful in your research, please cite:
+```bib
+@misc{kavediya2025isosignvid2audsignlanguagevideo,
+      title={IsoSignVid2Aud: Sign Language Video to Audio Conversion without Text Intermediaries},
+      author={Harsh Kavediya and Vighnesh Nayak and Bheeshm Sharma and Balamurugan Palaniappan},
+      year={2025},
+      eprint={2510.07837},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2510.07837}, 
+}
+```
 
 ## License
 
